@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { VideoPreviewProps, MediaFile } from '../../types'
 import './VideoPreview.css'
 
-function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart = 0, trimEnd }: VideoPreviewProps) {
+function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart = 0, trimEnd, clipStart = 0 }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -35,9 +35,10 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       }
       
       const handleTimeUpdate = () => {
-        // Convert video time to timeline time considering trim points
+        // Convert video time to timeline time considering trim points and clip position
         const videoTime = video.currentTime
-        const timelineTime = videoTime + trimStart
+        // Timeline time = clip.start + (current video time - trim start)
+        const timelineTime = clipStart + (videoTime - trimStart)
         onTimeUpdate(timelineTime)
         
         // If we have a trim end point and we've reached it, pause the video
@@ -60,7 +61,7 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
         video.removeEventListener('error', handleError)
       }
     }
-  }, [media, onTimeUpdate, trimStart, trimEnd])
+  }, [media, onTimeUpdate, trimStart, trimEnd, clipStart])
 
   useEffect(() => {
       if (videoRef.current) {
@@ -75,12 +76,14 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
   }, [isPlaying])
 
   useEffect(() => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - (currentTime - trimStart)) > 0.1) {
-      // Convert timeline time to video time considering trim points
-      const videoTime = Math.max(0, currentTime - trimStart)
-      videoRef.current.currentTime = videoTime
+    if (videoRef.current && Math.abs(videoRef.current.currentTime - (currentTime - clipStart + trimStart)) > 0.1) {
+      // Convert timeline time to video time considering trim points and clip position
+      // Timeline time = clip.start + (video time - trim start)
+      // So: video time = trim start + (timeline time - clip.start)
+      const videoTime = Math.max(trimStart, trimStart + (currentTime - clipStart))
+      videoRef.current.currentTime = Math.min(videoTime, trimEnd || videoRef.current.duration)
     }
-  }, [currentTime, trimStart])
+  }, [currentTime, trimStart, clipStart, trimEnd])
 
   // Handle trim point changes
   useEffect(() => {

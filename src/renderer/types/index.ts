@@ -39,6 +39,7 @@ export interface VideoPreviewProps {
   onTimeUpdate: (time: number) => void
   trimStart?: number
   trimEnd?: number
+  clipStart?: number // Timeline position where clip starts
 }
 
 export interface TimelineProps {

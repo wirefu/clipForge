@@ -119,8 +119,9 @@
 }
 
 .trim-handle-right {
-  right: -6px;
+  right: auto;
   border-radius: 0 4px 4px 0;
+  transform-origin: left center;
 }
 
 .trim-handle-right::before {
