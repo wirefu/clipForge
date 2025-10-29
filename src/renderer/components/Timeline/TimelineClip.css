@@ -30,6 +30,15 @@
   transform: scale(1.1);
 }
 
+/* Make right handle always visible when clip is selected */
+.timeline-clip.selected .trim-handle-right {
+  opacity: 1 !important;
+  background: #ff4444 !important;
+  transform: scale(1.2);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
 /* Trimmed portion (active area) */
 .clip-trimmed {
   position: absolute;

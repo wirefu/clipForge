@@ -7,6 +7,8 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
 
+  console.log('VideoPreview: Received trim points:', { trimStart, trimEnd, media: media?.name })
+
   // Convert file path to proper URL for Electron
   const getMediaUrl = (media: MediaFile) => {
     if (media.isBlob) {
@@ -25,6 +27,11 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       const handleLoadedMetadata = () => {
         setDuration(video.duration)
         setIsLoaded(true)
+        
+        // Set video to start at trim start point
+        if (trimStart > 0) {
+          video.currentTime = trimStart
+        }
       }
       
       const handleTimeUpdate = () => {
@@ -74,6 +81,17 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       videoRef.current.currentTime = videoTime
     }
   }, [currentTime, trimStart])
+
+  // Handle trim point changes
+  useEffect(() => {
+    if (videoRef.current && media) {
+      const video = videoRef.current
+      // Seek to trim start when trim points change
+      if (trimStart > 0) {
+        video.currentTime = trimStart
+      }
+    }
+  }, [trimStart, trimEnd, media])
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
