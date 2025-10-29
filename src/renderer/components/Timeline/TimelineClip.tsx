@@ -120,7 +120,7 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
         className="trim-handle trim-handle-right"
         onMouseDown={(e) => handleMouseDown(e, 'right')}
         style={{
-          right: '0%'
+          left: `${(trimStartPercentage + (trimmedDuration / clip.duration)) * 100}%`
         }}
       />
 

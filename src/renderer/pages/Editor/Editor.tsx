@@ -36,11 +36,14 @@ function Editor() {
   }
 
   const handleUpdateClip = (clipId: string, updates: Partial<TimelineClip>) => {
-    setTimelineClips(prev => 
-      prev.map(clip => 
+    console.log('Editor: Updating clip:', clipId, updates)
+    setTimelineClips(prev => {
+      const newClips = prev.map(clip => 
         clip.id === clipId ? { ...clip, ...updates } : clip
       )
-    )
+      console.log('Editor: Updated clips:', newClips)
+      return newClips
+    })
   }
 
   const handleSelectClip = (clipId: string) => {
