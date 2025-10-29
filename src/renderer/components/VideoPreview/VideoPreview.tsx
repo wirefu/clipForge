@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { VideoPreviewProps, MediaFile } from '../../types'
 import './VideoPreview.css'
 
-function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart = 0, trimEnd, clipStart = 0 }: VideoPreviewProps) {
+function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart = 0, trimEnd, clipStart = 0, onPlaybackEnd }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -36,15 +36,24 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       
       const handleTimeUpdate = () => {
         // Convert video time to timeline time considering trim points and clip position
+        // Timeline uses percentage (0-100), where 1% = 1 second (assuming 100s timeline)
         const videoTime = video.currentTime
-        // Timeline time = clip.start + (current video time - trim start)
-        const timelineTime = clipStart + (videoTime - trimStart)
-        console.log('VideoPreview time update:', { videoTime, trimStart, clipStart, timelineTime })
+        // Video time relative to trimmed portion
+        const relativeVideoTime = videoTime - trimStart
+        // Timeline time in seconds = clip.start (in seconds) + relative video time
+        // Since timeline uses percentage where 1% = 1 second, timeline time = clip.start + relativeVideoTime
+        const timelineTime = clipStart + relativeVideoTime
+        console.log('VideoPreview time update:', { videoTime, trimStart, clipStart, relativeVideoTime, timelineTime })
         onTimeUpdate(timelineTime)
         
-        // If we have a trim end point and we've reached it, pause the video
+        // If we have a trim end point and we've reached it, pause the video AND stop timeline
         if (trimEnd && videoTime >= (trimEnd - trimStart)) {
           video.pause()
+          // Update timeline to the end of trimmed portion
+          const trimmedEndTime = clipStart + (trimEnd - trimStart)
+          onTimeUpdate(trimmedEndTime)
+          // Notify parent that playback ended
+          onPlaybackEnd?.()
         }
       }
       

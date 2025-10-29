@@ -50,6 +50,10 @@ function Editor() {
     setSelectedClipId(clipId)
   }
 
+  const handlePlaybackEnd = () => {
+    setIsPlaying(false)
+  }
+
   // Get the selected clip's trim points
   const selectedClip = timelineClips.find(clip => clip.id === selectedClipId)
   const trimStart = selectedClip?.trimStart || 0
@@ -86,6 +90,7 @@ function Editor() {
             trimStart={trimStart}
             trimEnd={trimEnd}
             clipStart={clipStart}
+            onPlaybackEnd={handlePlaybackEnd}
           />
         </div>
         

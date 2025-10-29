@@ -40,6 +40,7 @@ export interface VideoPreviewProps {
   trimStart?: number
   trimEnd?: number
   clipStart?: number // Timeline position where clip starts
+  onPlaybackEnd?: () => void // Called when video reaches trim end
 }
 
 export interface TimelineProps {
