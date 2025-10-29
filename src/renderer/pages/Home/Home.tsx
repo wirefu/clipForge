@@ -6,6 +6,7 @@ function Home() {
       <div className="home-content">
         <h2>Welcome to ClipForge</h2>
         <p>Your desktop video editing solution</p>
+        <p>🎬 Hot reload is working!</p>
         
         <div className="home-actions">
           <button className="btn btn-primary">

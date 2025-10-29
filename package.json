@@ -2,7 +2,7 @@
   "name": "clipforge",
   "version": "1.0.0",
   "description": "Desktop Video Editor built with Electron, React, and TypeScript",
-  "main": "dist/main/main.js",
+  "main": "out/main/main.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",

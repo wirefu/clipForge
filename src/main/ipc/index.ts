@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
-import { IPC_CHANNELS } from '@/shared/ipc-channels'
-import { APP_INFO } from '@/shared/constants'
+import { IPC_CHANNELS } from '../../shared/ipc-channels'
+import { APP_INFO } from '../../shared/constants'
 import { 
   showImportDialog, 
   showExportDialog, 

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS } from '@/shared/ipc-channels'
+import { IPC_CHANNELS } from '../shared/ipc-channels'
 import type { 
   MediaFile, 
   TimelineState, 
@@ -11,7 +11,7 @@ import type {
   FileDialogResult,
   AppInfo,
   WindowState
-} from '@/shared/types'
+} from '../shared/types'
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object

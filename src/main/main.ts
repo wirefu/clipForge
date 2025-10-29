@@ -53,6 +53,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   createWindow()
   createMenu()
+  setupIpcHandlers() // Setup IPC handlers after app is ready
 
   app.on('activate', () => {
     // On macOS, re-create window when dock icon is clicked
@@ -77,9 +78,6 @@ app.on('web-contents-created', (_, contents) => {
     shell.openExternal(navigationUrl)
   })
 })
-
-// Setup IPC handlers
-setupIpcHandlers()
 
 // Export for testing
 export { mainWindow }
