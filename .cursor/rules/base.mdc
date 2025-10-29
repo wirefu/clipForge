@@ -1,0 +1,306 @@
+# ClipForge Project Rules
+
+## Project Overview
+ClipForge is a desktop video editor built in 72 hours using Electron, React, TypeScript, and Redux Toolkit. The project follows a compressed development sprint with strict deadlines and focused scope.
+
+## Core Development Principles
+
+### 1. Velocity Over Perfection
+- **Time Constraint**: 72-hour limit requires focused, efficient development
+- **MVP First**: Complete MVP before adding advanced features
+- **Simple Solutions**: Avoid over-engineering, choose simple approaches
+- **Quality Balance**: Maintain code quality while meeting deadlines
+
+### 2. User-Centric Design
+- **Core Workflow**: Record → Import → Arrange → Export
+- **Simplicity**: Complex features hidden behind simple interfaces
+- **Performance**: UI must remain responsive during heavy operations
+- **Reliability**: App must work consistently without crashes
+
+### 3. Test-Driven Development
+- **Test Coverage**: Write tests alongside implementation
+- **Critical Path**: Focus testing on core user workflows
+- **Quality Assurance**: Tests serve as verification for AI-generated code
+- **Regression Prevention**: Tests catch issues early
+
+## Technical Standards
+
+### Code Quality
+- **TypeScript**: Strict mode enabled, no `any` types
+- **ESLint**: Follow configured linting rules
+- **Prettier**: Consistent code formatting
+- **Naming**: Clear, descriptive variable and function names
+- **Comments**: Document complex logic and business rules
+
+### Architecture Patterns
+- **Separation of Concerns**: Main process for system operations, renderer for UI
+- **Redux Toolkit**: Centralized state management with slices
+- **Component Composition**: Build complex UIs from simple components
+- **Custom Hooks**: Extract reusable logic into custom hooks
+- **Service Layer**: Encapsulate business logic in services
+
+### Performance Requirements
+- **Timeline Responsiveness**: Smooth UI with 10+ clips
+- **Preview Performance**: 30fps minimum playback
+- **Memory Management**: No memory leaks in 15+ minute sessions
+- **Export Speed**: Utilize all CPU cores for faster exports
+- **Launch Time**: App launches in under 5 seconds
+
+## Development Workflow
+
+### Git Strategy
+- **Branch Naming**: `feature/PR-XX-description`
+- **Commit Messages**: `type(scope): description`
+- **Frequent Commits**: Small, focused commits
+- **PR Reviews**: Self-review before merging
+- **Clean History**: Squash commits when merging
+
+### Testing Strategy
+- **Unit Tests**: Individual function and component testing
+- **Integration Tests**: Component interaction testing
+- **E2E Tests**: Complete user workflow testing
+- **Performance Tests**: Benchmark critical operations
+- **Test Coverage**: Aim for 70%+ coverage
+
+### Build and Deployment
+- **Development**: `npm run dev` for local development
+- **Testing**: `npm test` for test suite
+- **Building**: `npm run build` for production
+- **Packaging**: `npm run package:mac` for macOS app
+- **Quality**: Run linting and type checking before commits
+
+## File Organization
+
+### Directory Structure
+```
+src/
+├── main/           # Electron main process
+├── renderer/       # React application
+├── preload/        # Preload scripts
+└── shared/         # Shared code between processes
+```
+
+### Component Organization
+- **Layout Components**: `components/Layout/`
+- **Feature Components**: `components/[FeatureName]/`
+- **UI Components**: `components/UI/`
+- **Pages**: `pages/[PageName]/`
+- **Hooks**: `hooks/`
+- **Store**: `store/slices/`
+- **Types**: `types/`
+- **Utils**: `utils/`
+
+### Naming Conventions
+- **Components**: PascalCase (`VideoPlayer.tsx`)
+- **Files**: kebab-case for utilities (`file-utils.ts`)
+- **Variables**: camelCase (`currentTime`)
+- **Constants**: UPPER_SNAKE_CASE (`SUPPORTED_FORMATS`)
+- **Types**: PascalCase (`VideoMetadata`)
+
+## Error Handling
+
+### Error Boundaries
+- **Component Level**: Catch React errors, show fallback UI
+- **Feature Level**: Isolate errors to specific features
+- **App Level**: Global error boundary for critical failures
+
+### User Feedback
+- **Toast Notifications**: Non-blocking error messages
+- **Modal Dialogs**: Critical errors requiring user action
+- **Inline Messages**: Context-specific error messages
+- **Loading States**: Show progress for async operations
+
+### Error Recovery
+- **Graceful Degradation**: App continues working despite errors
+- **Retry Mechanisms**: Automatic retry for transient failures
+- **Fallback Options**: Alternative approaches when primary fails
+- **User Guidance**: Clear instructions for error resolution
+
+## Security Considerations
+
+### Electron Security
+- **Context Isolation**: Enabled for security
+- **Node Integration**: Disabled in renderer
+- **Preload Scripts**: Secure IPC bridge
+- **CSP**: Content Security Policy enabled
+
+### File System Security
+- **Path Validation**: Prevent directory traversal
+- **File Type Validation**: Only allow supported formats
+- **Size Limits**: Prevent memory exhaustion
+- **Permission Checks**: Verify file access permissions
+
+## Performance Guidelines
+
+### React Performance
+- **Memoization**: Use React.memo, useMemo, useCallback
+- **Virtual Rendering**: Only render visible components
+- **Lazy Loading**: Load components on demand
+- **Bundle Splitting**: Split code by feature
+
+### Redux Performance
+- **Normalized State**: Use normalized data structures
+- **Memoized Selectors**: Prevent unnecessary re-renders
+- **Action Optimization**: Batch related actions
+- **State Updates**: Use immutable update patterns
+
+### Memory Management
+- **Resource Cleanup**: Proper cleanup in useEffect
+- **Cache Management**: Limit cache sizes
+- **Garbage Collection**: Avoid memory leaks
+- **Resource Monitoring**: Track memory usage
+
+## Testing Guidelines
+
+### Test Organization
+- **Unit Tests**: `tests/unit/`
+- **Integration Tests**: `tests/integration/`
+- **E2E Tests**: `tests/e2e/`
+- **Performance Tests**: `tests/performance/`
+
+### Test Patterns
+- **Arrange-Act-Assert**: Consistent test structure
+- **Mock External Dependencies**: FFmpeg, file system, IPC
+- **Test User Interactions**: Focus on user-facing behavior
+- **Test Error Cases**: Ensure graceful error handling
+
+### Test Data
+- **Test Fixtures**: Reusable test data
+- **Mock Services**: Consistent mocking patterns
+- **Test Utilities**: Helper functions for common operations
+- **Cleanup**: Proper cleanup after tests
+
+## Documentation Standards
+
+### Code Documentation
+- **Function Comments**: Document complex functions
+- **Type Definitions**: Clear type documentation
+- **API Documentation**: Document public APIs
+- **README Updates**: Keep documentation current
+
+### Memory Bank Updates
+- **Progress Tracking**: Update progress.md regularly
+- **Decision Documentation**: Record architectural decisions
+- **Issue Tracking**: Document challenges and solutions
+- **Context Preservation**: Maintain complete project context
+
+## Common Patterns
+
+### IPC Communication
+```typescript
+// Request-response pattern
+const result = await window.electronAPI.invoke('channel:action', payload)
+
+// Event streaming pattern
+window.electronAPI.on('channel:event', (data) => {
+  // Handle event
+})
+```
+
+### Redux Actions
+```typescript
+// Async thunk pattern
+export const fetchData = createAsyncThunk(
+  'feature/fetchData',
+  async (payload, { rejectWithValue }) => {
+    try {
+      const result = await api.fetchData(payload)
+      return result
+    } catch (error) {
+      return rejectWithValue(error.message)
+    }
+  }
+)
+```
+
+### Component Pattern
+```typescript
+// Container-Presenter pattern
+const ContainerComponent = () => {
+  const dispatch = useAppDispatch()
+  const data = useAppSelector(selectData)
+  
+  return <PresenterComponent data={data} onAction={dispatch(action)} />
+}
+```
+
+## Anti-Patterns to Avoid
+
+### Code Quality
+- **Avoid**: Direct state mutations in Redux
+- **Avoid**: Using `any` type in TypeScript
+- **Avoid**: Blocking UI thread with heavy operations
+- **Avoid**: Not cleaning up event listeners
+
+### Architecture
+- **Avoid**: Tight coupling between unrelated components
+- **Avoid**: Business logic in React components
+- **Avoid**: Direct DOM manipulation
+- **Avoid**: Global variables and side effects
+
+### Performance
+- **Avoid**: Unnecessary re-renders
+- **Avoid**: Memory leaks from uncleaned resources
+- **Avoid**: Blocking operations on main thread
+- **Avoid**: Large bundle sizes without code splitting
+
+## Success Criteria
+
+### MVP Success
+- [ ] App launches successfully
+- [ ] Can import MP4/MOV files
+- [ ] Timeline displays imported clips
+- [ ] Video preview plays clips
+- [ ] Basic trim functionality works
+- [ ] Can export to MP4
+- [ ] App packages as native .app
+
+### Full Submission Success
+- [ ] Screen recording works
+- [ ] Webcam recording works
+- [ ] PiP recording works
+- [ ] Multi-track timeline
+- [ ] Advanced editing features
+- [ ] Multiple export options
+- [ ] Professional-quality output
+
+### Quality Metrics
+- [ ] Timeline responsive with 10+ clips
+- [ ] Preview smooth at 30fps
+- [ ] Export completes without crashes
+- [ ] App launches in under 5 seconds
+- [ ] No memory leaks in 15+ minute sessions
+
+## Emergency Procedures
+
+### Critical Issues
+- **Build Failures**: Check dependencies and configuration
+- **Performance Issues**: Profile and optimize bottlenecks
+- **Memory Leaks**: Use dev tools to identify leaks
+- **Export Failures**: Test FFmpeg integration early
+
+### Time Management
+- **Scope Reduction**: Cut non-essential features if behind schedule
+- **Quality vs Speed**: Balance quality with time constraints
+- **Testing Strategy**: Focus on critical path testing
+- **Documentation**: Balance documentation with development
+
+## Resources and References
+
+### Documentation
+- **Memory Bank**: Complete project context in `/memory-bank/`
+- **Project Brief**: Core requirements and deadlines
+- **Technical Context**: Technology stack and setup
+- **System Patterns**: Architecture and design patterns
+
+### External Resources
+- **Electron Docs**: https://electronjs.org/docs
+- **React Docs**: https://react.dev
+- **Redux Toolkit**: https://redux-toolkit.js.org
+- **FFmpeg Docs**: https://ffmpeg.org/documentation.html
+
+### Development Tools
+- **VS Code**: Recommended IDE with extensions
+- **React DevTools**: Browser extension for debugging
+- **Redux DevTools**: Browser extension for state debugging
+- **Electron DevTools**: Built-in debugging tools

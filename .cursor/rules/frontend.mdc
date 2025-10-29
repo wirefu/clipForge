@@ -1,0 +1,339 @@
+# Frontend Component Standards
+
+## Component Architecture
+
+### Component Types
+- **Layout Components**: Structure and layout (`Layout`, `Toolbar`, `MenuBar`)
+- **Feature Components**: Specific functionality (`MediaLibrary`, `Timeline`, `VideoPreview`)
+- **UI Components**: Reusable interface elements (`Button`, `Modal`, `Slider`)
+- **Page Components**: Top-level page containers (`Home`, `Editor`, `Settings`)
+
+### Component Structure
+```typescript
+// Standard component template
+interface ComponentProps {
+  // Props interface
+}
+
+const Component: React.FC<ComponentProps> = ({ prop1, prop2 }) => {
+  // Hooks
+  const dispatch = useAppDispatch()
+  const data = useAppSelector(selectData)
+  
+  // Event handlers
+  const handleAction = useCallback(() => {
+    // Handler logic
+  }, [])
+  
+  // Render
+  return (
+    <div className="component-container">
+      {/* Component JSX */}
+    </div>
+  )
+}
+
+export default Component
+```
+
+## Styling Guidelines
+
+### Tailwind CSS Usage
+- **Utility Classes**: Use Tailwind utilities for styling
+- **Responsive Design**: Mobile-first approach with responsive prefixes
+- **Dark Mode**: Support dark mode with `dark:` prefix
+- **Custom Classes**: Create custom classes for complex styling
+
+### Component Styling
+```typescript
+// Good: Tailwind utilities
+<div className="flex items-center justify-between p-4 bg-white dark:bg-gray-800">
+
+// Good: Custom CSS for complex styling
+<div className="timeline-clip" style={{ left: `${position}px`, width: `${width}px` }}>
+
+// Avoid: Inline styles for simple styling
+<div style={{ display: 'flex', padding: '16px' }}>
+```
+
+### CSS Organization
+- **Global Styles**: `src/renderer/src/styles/globals.css`
+- **Component Styles**: `ComponentName.css` alongside component
+- **Tailwind**: `src/renderer/src/styles/tailwind.css`
+
+## State Management
+
+### Redux Integration
+- **useAppDispatch**: Use typed dispatch hook
+- **useAppSelector**: Use typed selector hook
+- **Memoized Selectors**: Use createSelector for derived state
+- **Action Creators**: Use Redux Toolkit action creators
+
+### Local State
+- **useState**: For component-specific state
+- **useReducer**: For complex local state logic
+- **useRef**: For DOM references and mutable values
+- **useCallback/useMemo**: For performance optimization
+
+### State Patterns
+```typescript
+// Redux state
+const data = useAppSelector(selectData)
+const isLoading = useAppSelector(selectIsLoading)
+
+// Local state
+const [localState, setLocalState] = useState(initialValue)
+
+// Memoized values
+const memoizedValue = useMemo(() => {
+  return expensiveCalculation(data)
+}, [data])
+
+// Memoized callbacks
+const handleClick = useCallback(() => {
+  dispatch(action(data))
+}, [dispatch, data])
+```
+
+## Event Handling
+
+### Event Handler Patterns
+- **onClick**: Handle click events
+- **onChange**: Handle input changes
+- **onSubmit**: Handle form submissions
+- **onKeyDown**: Handle keyboard events
+- **onDragStart/onDrop**: Handle drag and drop
+
+### Event Handler Implementation
+```typescript
+// Good: Memoized event handlers
+const handleClick = useCallback((id: string) => {
+  dispatch(selectItem(id))
+}, [dispatch])
+
+// Good: Inline handlers for simple actions
+<button onClick={() => dispatch(action())}>Click</button>
+
+// Good: Event object handling
+const handleKeyDown = useCallback((event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    handleSubmit()
+  }
+}, [handleSubmit])
+```
+
+## Performance Optimization
+
+### React Performance
+- **React.memo**: Prevent unnecessary re-renders
+- **useMemo**: Memoize expensive calculations
+- **useCallback**: Memoize event handlers
+- **Lazy Loading**: Load components on demand
+
+### Rendering Optimization
+```typescript
+// Memoized component
+const MemoizedComponent = React.memo(({ data }) => {
+  return <div>{data.name}</div>
+})
+
+// Memoized calculation
+const expensiveValue = useMemo(() => {
+  return data.reduce((sum, item) => sum + item.value, 0)
+}, [data])
+
+// Memoized callback
+const handleClick = useCallback(() => {
+  onItemClick(item.id)
+}, [onItemClick, item.id])
+```
+
+### Virtual Rendering
+- **Timeline**: Only render clips in viewport
+- **Media Library**: Virtual scrolling for large lists
+- **Performance**: Maintain 60fps UI updates
+
+## Accessibility
+
+### ARIA Labels
+- **aria-label**: Provide accessible labels
+- **aria-describedby**: Link to descriptions
+- **aria-expanded**: Indicate expandable content
+- **aria-selected**: Indicate selected items
+
+### Keyboard Navigation
+- **Tab Order**: Logical tab sequence
+- **Keyboard Shortcuts**: Support common shortcuts
+- **Focus Management**: Visible focus indicators
+- **Screen Reader**: Support screen reader navigation
+
+### Accessibility Implementation
+```typescript
+// Good: Accessible button
+<button
+  aria-label="Delete item"
+  onClick={handleDelete}
+  className="delete-button"
+>
+  <TrashIcon />
+</button>
+
+// Good: Accessible input
+<input
+  type="text"
+  aria-label="Search media files"
+  placeholder="Search..."
+  value={searchTerm}
+  onChange={handleSearch}
+/>
+```
+
+## Error Handling
+
+### Error Boundaries
+- **Component Level**: Catch React errors
+- **Feature Level**: Isolate errors to features
+- **Fallback UI**: Show fallback when errors occur
+
+### Error States
+```typescript
+// Error state handling
+const [error, setError] = useState<string | null>(null)
+
+if (error) {
+  return <ErrorMessage message={error} onRetry={handleRetry} />
+}
+
+if (isLoading) {
+  return <LoadingSpinner />
+}
+
+return <MainContent />
+```
+
+## Testing
+
+### Component Testing
+- **Render Testing**: Test component renders correctly
+- **Interaction Testing**: Test user interactions
+- **Props Testing**: Test different prop combinations
+- **State Testing**: Test state changes
+
+### Test Patterns
+```typescript
+// Component test template
+import { render, screen, fireEvent } from '@testing-library/react'
+import { Provider } from 'react-redux'
+import Component from './Component'
+
+const renderWithProvider = (component: React.ReactElement) => {
+  return render(
+    <Provider store={store}>
+      {component}
+    </Provider>
+  )
+}
+
+test('renders component correctly', () => {
+  renderWithProvider(<Component />)
+  expect(screen.getByRole('button')).toBeInTheDocument()
+})
+
+test('handles user interaction', () => {
+  renderWithProvider(<Component />)
+  fireEvent.click(screen.getByRole('button'))
+  expect(mockHandler).toHaveBeenCalled()
+})
+```
+
+## Common Patterns
+
+### Modal Components
+```typescript
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null
+  
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  )
+}
+```
+
+### Form Components
+```typescript
+const Form: React.FC<FormProps> = ({ onSubmit, initialData }) => {
+  const [formData, setFormData] = useState(initialData)
+  
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    onSubmit(formData)
+  }
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* Form fields */}
+    </form>
+  )
+}
+```
+
+### List Components
+```typescript
+const List: React.FC<ListProps> = ({ items, onItemClick }) => {
+  return (
+    <div className="list-container">
+      {items.map((item) => (
+        <ListItem
+          key={item.id}
+          item={item}
+          onClick={() => onItemClick(item.id)}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
+## Best Practices
+
+### Component Design
+- **Single Responsibility**: Each component has one purpose
+- **Composition**: Build complex UIs from simple components
+- **Reusability**: Design components for reuse
+- **Props Interface**: Clear, typed prop interfaces
+
+### Code Organization
+- **File Structure**: Co-locate related files
+- **Import Order**: External, internal, relative imports
+- **Export Patterns**: Default exports for components
+- **Type Definitions**: Separate types file for complex types
+
+### Performance
+- **Bundle Size**: Keep components small and focused
+- **Re-renders**: Minimize unnecessary re-renders
+- **Memory**: Clean up resources and subscriptions
+- **Loading**: Show loading states for async operations
+
+## Anti-Patterns to Avoid
+
+### Component Anti-Patterns
+- **Avoid**: Large, complex components
+- **Avoid**: Business logic in components
+- **Avoid**: Direct DOM manipulation
+- **Avoid**: Inline styles for simple styling
+
+### State Anti-Patterns
+- **Avoid**: Storing derived state
+- **Avoid**: Mutating state directly
+- **Avoid**: Overusing local state
+- **Avoid**: Not cleaning up subscriptions
+
+### Performance Anti-Patterns
+- **Avoid**: Unnecessary re-renders
+- **Avoid**: Large bundle sizes
+- **Avoid**: Memory leaks
+- **Avoid**: Blocking operations on main thread

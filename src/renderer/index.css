@@ -1,4 +1,7 @@
-/* index.css */
+/* Import Tailwind CSS */
+@import './styles/tailwind.css';
+
+/* Legacy CSS variables for backward compatibility */
 :root {
   --primary-color: #00d4ff;
   --secondary-color: #0099cc;

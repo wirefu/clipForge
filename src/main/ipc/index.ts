@@ -8,63 +8,11 @@ import {
   showOpenProjectDialog 
 } from '../utils/paths'
 
+// Import the new file handlers
+import './file-handlers'
+
 export function setupIpcHandlers(): void {
-  // File operations
-  ipcMain.handle(IPC_CHANNELS.FILE.IMPORT, async () => {
-    try {
-      const filePaths = await showImportDialog()
-      return {
-        canceled: filePaths.length === 0,
-        filePaths,
-      }
-    } catch (error) {
-      console.error('Import dialog error:', error)
-      return {
-        canceled: true,
-        filePaths: [],
-      }
-    }
-  })
-
-  ipcMain.handle(IPC_CHANNELS.FILE.EXPORT, async () => {
-    try {
-      const outputPath = await showExportDialog()
-      return outputPath
-    } catch (error) {
-      console.error('Export dialog error:', error)
-      return null
-    }
-  })
-
-  ipcMain.handle(IPC_CHANNELS.FILE.SAVE_PROJECT, async () => {
-    try {
-      const outputPath = await showSaveProjectDialog()
-      if (outputPath) {
-        // TODO: Implement project saving logic
-        console.log('Saving project to:', outputPath)
-        return outputPath
-      }
-      return null
-    } catch (error) {
-      console.error('Save project error:', error)
-      return null
-    }
-  })
-
-  ipcMain.handle(IPC_CHANNELS.FILE.LOAD_PROJECT, async () => {
-    try {
-      const inputPath = await showOpenProjectDialog()
-      if (inputPath) {
-        // TODO: Implement project loading logic
-        console.log('Loading project from:', inputPath)
-        return null // Placeholder
-      }
-      return null
-    } catch (error) {
-      console.error('Load project error:', error)
-      return null
-    }
-  })
+  // File operations are now handled in file-handlers.ts
 
   // Recording operations (placeholders)
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES, async () => {

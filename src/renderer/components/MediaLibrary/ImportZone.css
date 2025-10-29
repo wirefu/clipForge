@@ -1,0 +1,121 @@
+.import-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--surface-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.import-zone:hover {
+  border-color: var(--primary-color);
+  background-color: rgba(0, 212, 255, 0.05);
+}
+
+.import-zone.drag-over {
+  border-color: var(--primary-color);
+  background-color: rgba(0, 212, 255, 0.1);
+  transform: scale(1.02);
+}
+
+.import-zone.importing {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.import-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.import-zone-icon {
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.import-zone-icon svg {
+  width: 48px;
+  height: 48px;
+}
+
+.import-zone h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.import-zone p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.import-zone-formats {
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.import-zone-button {
+  margin-top: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.import-zone-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.import-zone-loading p {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .import-zone {
+    padding: 30px 15px;
+  }
+  
+  .import-zone-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .import-zone h3 {
+    font-size: 16px;
+  }
+  
+  .import-zone p {
+    font-size: 13px;
+  }
+  
+  .import-zone-formats {
+    font-size: 11px;
+  }
+}

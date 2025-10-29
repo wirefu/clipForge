@@ -1,0 +1,550 @@
+# Electron Main Process Rules
+
+## Main Process Architecture
+
+### Process Responsibilities
+- **Window Management**: Create and manage application windows
+- **Menu System**: Application menu and context menus
+- **IPC Handlers**: Handle communication with renderer process
+- **System Services**: File system, FFmpeg, recording services
+- **Security**: Enforce security policies and sandboxing
+
+### File Organization
+```
+src/main/
+├── main.ts              # Application entry point
+├── menu.ts              # Application menu configuration
+├── ipc/                 # IPC handlers
+│   ├── index.ts         # IPC setup and registration
+│   ├── file-handlers.ts # File import/export handlers
+│   ├── recording-handlers.ts # Recording IPC handlers
+│   └── project-handlers.ts  # Project save/load handlers
+├── services/            # Main process services
+│   ├── ffmpeg.service.ts    # FFmpeg video processing
+│   ├── recording.service.ts # Screen/webcam recording
+│   ├── thumbnail.service.ts # Thumbnail generation
+│   └── export.service.ts    # Video export queue
+└── utils/               # Main process utilities
+    ├── file-utils.ts    # File system helpers
+    └── paths.ts         # Application paths
+```
+
+## IPC Communication
+
+### IPC Channel Naming
+- **Format**: `feature:action` (e.g., `file:import`, `recording:start`)
+- **Consistency**: Use consistent naming across all channels
+- **Documentation**: Document all IPC channels in `ipc-channels.ts`
+
+### IPC Handler Pattern
+```typescript
+// Standard IPC handler template
+ipcMain.handle('channel:action', async (event, payload) => {
+  try {
+    // Validate input
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('Invalid payload')
+    }
+    
+    // Call service
+    const result = await service.method(payload)
+    
+    // Return success response
+    return { success: true, data: result }
+  } catch (error) {
+    // Log error
+    console.error('IPC handler error:', error)
+    
+    // Return error response
+    return { 
+      success: false, 
+      error: error.message || 'Unknown error occurred' 
+    }
+  }
+})
+```
+
+### IPC Response Format
+```typescript
+// Success response
+interface SuccessResponse<T> {
+  success: true
+  data: T
+}
+
+// Error response
+interface ErrorResponse {
+  success: false
+  error: string
+}
+
+type IPCResponse<T> = SuccessResponse<T> | ErrorResponse
+```
+
+## Service Layer
+
+### Service Architecture
+- **Single Responsibility**: Each service handles one domain
+- **Async Operations**: All service methods are async
+- **Error Handling**: Consistent error handling across services
+- **Logging**: Log important operations and errors
+
+### Service Pattern
+```typescript
+// Standard service template
+class ServiceName {
+  private config: ServiceConfig
+  
+  constructor(config: ServiceConfig) {
+    this.config = config
+  }
+  
+  async methodName(params: MethodParams): Promise<MethodResult> {
+    try {
+      // Service logic
+      const result = await this.performOperation(params)
+      
+      // Log success
+      console.log(`Service operation completed: ${params}`)
+      
+      return result
+    } catch (error) {
+      // Log error
+      console.error(`Service operation failed: ${error.message}`)
+      
+      // Re-throw with context
+      throw new Error(`Service operation failed: ${error.message}`)
+    }
+  }
+  
+  private async performOperation(params: MethodParams): Promise<MethodResult> {
+    // Implementation
+  }
+}
+```
+
+## Window Management
+
+### Window Configuration
+```typescript
+// Standard window configuration
+const createWindow = (): void => {
+  const mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 800,
+    minHeight: 600,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, '../preload/preload.js'),
+      sandbox: false // Required for some Electron APIs
+    },
+    titleBarStyle: 'hiddenInset', // macOS
+    show: false // Don't show until ready
+  })
+  
+  // Load renderer
+  if (isDev) {
+    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.webContents.openDevTools()
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  }
+  
+  // Show when ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show()
+  })
+}
+```
+
+### Window Events
+- **ready-to-show**: Show window when ready
+- **closed**: Clean up when window closes
+- **resize**: Handle window resize events
+- **focus/blur**: Handle window focus changes
+
+## Menu System
+
+### Menu Configuration
+```typescript
+// Application menu template
+const createMenu = (): Menu => {
+  const template: MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Import Media',
+          accelerator: 'CmdOrCtrl+I',
+          click: () => {
+            // Trigger import dialog
+          }
+        },
+        {
+          label: 'Export Video',
+          accelerator: 'CmdOrCtrl+E',
+          click: () => {
+            // Trigger export dialog
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Quit',
+          accelerator: 'CmdOrCtrl+Q',
+          click: () => {
+            app.quit()
+          }
+        }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { label: 'Undo', accelerator: 'CmdOrCtrl+Z' },
+        { label: 'Redo', accelerator: 'CmdOrCtrl+Shift+Z' },
+        { type: 'separator' },
+        { label: 'Cut', accelerator: 'CmdOrCtrl+X' },
+        { label: 'Copy', accelerator: 'CmdOrCtrl+C' },
+        { label: 'Paste', accelerator: 'CmdOrCtrl+V' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { label: 'Reload', accelerator: 'CmdOrCtrl+R' },
+        { label: 'Toggle DevTools', accelerator: 'F12' },
+        { type: 'separator' },
+        { label: 'Actual Size', accelerator: 'CmdOrCtrl+0' },
+        { label: 'Zoom In', accelerator: 'CmdOrCtrl+Plus' },
+        { label: 'Zoom Out', accelerator: 'CmdOrCtrl+-' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About ClipForge',
+          click: () => {
+            // Show about dialog
+          }
+        }
+      ]
+    }
+  ]
+  
+  return Menu.buildFromTemplate(template)
+}
+```
+
+## File System Operations
+
+### File Handling
+- **Path Validation**: Prevent directory traversal attacks
+- **File Type Validation**: Only allow supported formats
+- **Size Limits**: Prevent memory exhaustion
+- **Permission Checks**: Verify file access permissions
+
+### File Operations Pattern
+```typescript
+// File operation template
+const handleFileOperation = async (filePath: string): Promise<FileResult> => {
+  try {
+    // Validate path
+    if (!isValidPath(filePath)) {
+      throw new Error('Invalid file path')
+    }
+    
+    // Check file exists
+    if (!await fs.pathExists(filePath)) {
+      throw new Error('File does not exist')
+    }
+    
+    // Check file type
+    if (!isSupportedFormat(filePath)) {
+      throw new Error('Unsupported file format')
+    }
+    
+    // Perform operation
+    const result = await performFileOperation(filePath)
+    
+    return result
+  } catch (error) {
+    console.error('File operation failed:', error)
+    throw error
+  }
+}
+```
+
+## FFmpeg Integration
+
+### FFmpeg Service
+```typescript
+// FFmpeg service template
+class FFmpegService {
+  private ffmpeg: FFmpeg
+  
+  constructor() {
+    this.ffmpeg = new FFmpeg()
+    this.setupFFmpeg()
+  }
+  
+  private setupFFmpeg(): void {
+    // Configure FFmpeg paths
+    this.ffmpeg.setFfmpegPath(ffmpeg.path)
+    this.ffmpeg.setFfprobePath(ffprobe.path)
+  }
+  
+  async exportVideo(clips: Clip[], settings: ExportSettings): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const outputPath = this.generateOutputPath(settings)
+      
+      // Build FFmpeg command
+      const command = this.buildExportCommand(clips, settings, outputPath)
+      
+      // Execute command
+      command
+        .on('progress', (progress) => {
+          // Emit progress events
+          this.emitProgress(progress)
+        })
+        .on('end', () => {
+          resolve(outputPath)
+        })
+        .on('error', (error) => {
+          reject(error)
+        })
+        .run()
+    })
+  }
+}
+```
+
+### FFmpeg Command Building
+```typescript
+// FFmpeg command building
+private buildExportCommand(
+  clips: Clip[], 
+  settings: ExportSettings, 
+  outputPath: string
+): FFmpegCommand {
+  let command = this.ffmpeg()
+  
+  // Input files
+  clips.forEach(clip => {
+    command = command.input(clip.filePath)
+  })
+  
+  // Video settings
+  command = command
+    .size(settings.resolution)
+    .fps(settings.frameRate)
+    .videoBitrate(settings.bitrate)
+  
+  // Output
+  command = command.output(outputPath)
+  
+  return command
+}
+```
+
+## Recording Services
+
+### Screen Recording
+```typescript
+// Screen recording service
+class RecordingService {
+  async getScreenSources(): Promise<ScreenSource[]> {
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ['screen', 'window']
+      })
+      
+      return sources.map(source => ({
+        id: source.id,
+        name: source.name,
+        thumbnail: source.thumbnail
+      }))
+    } catch (error) {
+      console.error('Failed to get screen sources:', error)
+      throw error
+    }
+  }
+  
+  async startScreenRecording(sourceId: string): Promise<void> {
+    try {
+      // Get media stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: sourceId
+          }
+        }
+      })
+      
+      // Start recording
+      this.mediaRecorder = new MediaRecorder(stream)
+      this.mediaRecorder.start()
+      
+    } catch (error) {
+      console.error('Failed to start screen recording:', error)
+      throw error
+    }
+  }
+}
+```
+
+## Error Handling
+
+### Error Types
+- **Validation Errors**: Input validation failures
+- **File System Errors**: File operation failures
+- **FFmpeg Errors**: Video processing failures
+- **Recording Errors**: Media capture failures
+- **IPC Errors**: Communication failures
+
+### Error Handling Pattern
+```typescript
+// Error handling template
+const handleOperation = async (params: OperationParams): Promise<OperationResult> => {
+  try {
+    // Validate input
+    validateParams(params)
+    
+    // Perform operation
+    const result = await performOperation(params)
+    
+    // Log success
+    console.log('Operation completed successfully')
+    
+    return result
+  } catch (error) {
+    // Log error with context
+    console.error('Operation failed:', {
+      error: error.message,
+      params: params,
+      stack: error.stack
+    })
+    
+    // Return user-friendly error
+    throw new Error(`Operation failed: ${error.message}`)
+  }
+}
+```
+
+## Security Considerations
+
+### Security Best Practices
+- **Context Isolation**: Enable context isolation
+- **Node Integration**: Disable in renderer process
+- **Preload Scripts**: Use secure preload scripts
+- **CSP**: Implement Content Security Policy
+- **Input Validation**: Validate all inputs
+- **Path Sanitization**: Sanitize file paths
+
+### Security Implementation
+```typescript
+// Security configuration
+const securityConfig = {
+  webPreferences: {
+    nodeIntegration: false,
+    contextIsolation: true,
+    enableRemoteModule: false,
+    webSecurity: true,
+    allowRunningInsecureContent: false
+  }
+}
+```
+
+## Performance Optimization
+
+### Performance Guidelines
+- **Async Operations**: Use async/await for non-blocking operations
+- **Progress Events**: Emit progress for long-running operations
+- **Memory Management**: Clean up resources properly
+- **Error Recovery**: Implement retry mechanisms
+
+### Performance Monitoring
+```typescript
+// Performance monitoring
+const monitorPerformance = (operation: string, fn: () => Promise<any>) => {
+  const startTime = Date.now()
+  
+  return fn().finally(() => {
+    const duration = Date.now() - startTime
+    console.log(`${operation} took ${duration}ms`)
+  })
+}
+```
+
+## Testing
+
+### Main Process Testing
+- **Service Testing**: Test service methods
+- **IPC Testing**: Test IPC handlers
+- **Integration Testing**: Test service interactions
+- **Error Testing**: Test error handling
+
+### Test Patterns
+```typescript
+// Service test template
+describe('ServiceName', () => {
+  let service: ServiceName
+  
+  beforeEach(() => {
+    service = new ServiceName(mockConfig)
+  })
+  
+  test('should perform operation successfully', async () => {
+    const result = await service.methodName(mockParams)
+    expect(result).toBeDefined()
+  })
+  
+  test('should handle errors gracefully', async () => {
+    await expect(service.methodName(invalidParams)).rejects.toThrow()
+  })
+})
+```
+
+## Best Practices
+
+### Code Organization
+- **Single Responsibility**: Each service handles one domain
+- **Dependency Injection**: Inject dependencies for testing
+- **Error Handling**: Consistent error handling patterns
+- **Logging**: Comprehensive logging for debugging
+
+### Performance
+- **Async Operations**: Use async/await for non-blocking operations
+- **Progress Events**: Emit progress for long-running operations
+- **Memory Management**: Clean up resources properly
+- **Error Recovery**: Implement retry mechanisms
+
+### Security
+- **Input Validation**: Validate all inputs
+- **Path Sanitization**: Sanitize file paths
+- **Error Messages**: Don't expose sensitive information
+- **Resource Limits**: Prevent resource exhaustion
+
+## Anti-Patterns to Avoid
+
+### Architecture Anti-Patterns
+- **Avoid**: Business logic in IPC handlers
+- **Avoid**: Direct file system access from renderer
+- **Avoid**: Blocking operations on main thread
+- **Avoid**: Tight coupling between services
+
+### Security Anti-Patterns
+- **Avoid**: Disabling security features
+- **Avoid**: Exposing sensitive data in error messages
+- **Avoid**: Not validating inputs
+- **Avoid**: Using eval or similar dangerous functions
+
+### Performance Anti-Patterns
+- **Avoid**: Synchronous file operations
+- **Avoid**: Not cleaning up resources
+- **Avoid**: Blocking the main thread
+- **Avoid**: Not handling errors gracefully

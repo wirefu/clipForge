@@ -1,56 +1,40 @@
-import { useState } from 'react'
-import { MediaLibraryProps, MediaFile } from '../../types'
+import React, { useEffect } from 'react'
+import { useAppDispatch, useAppSelector } from '../../store/hooks'
+import { MediaFile } from '../types/media.types'
+import ImportZone from './ImportZone'
 import './MediaLibrary.css'
 
+interface MediaLibraryProps {
+  onMediaSelect?: (media: MediaFile) => void
+  selectedMedia?: MediaFile | null
+}
+
 function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
-  const [isDragOver, setIsDragOver] = useState(false)
+  const dispatch = useAppDispatch()
+  const { mediaFiles, isLoading, error, searchQuery, filterType } = useAppSelector(state => state.mediaLibrary)
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(true)
+  // Load imported files on component mount
+  useEffect(() => {
+    const loadImportedFiles = async () => {
+      try {
+        // This would call the main process to get imported files
+        // For now, we'll use the Redux state
+        console.log('Loading imported files...')
+      } catch (error) {
+        console.error('Failed to load imported files:', error)
+      }
+    }
+
+    loadImportedFiles()
+  }, [])
+
+  const handleImport = (files: MediaFile[]) => {
+    console.log('Files imported:', files)
+    // Files are already added to Redux store by ImportZone
   }
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragOver(false)
-    
-    const files = Array.from(e.dataTransfer.files)
-    const newMediaFiles: MediaFile[] = files.map(file => ({
-      id: Date.now().toString() + Math.random(),
-      name: file.name,
-      path: URL.createObjectURL(file),
-      type: file.type.startsWith('video/') ? 'video' as const : 
-            file.type.startsWith('audio/') ? 'audio' as const : 'image' as const,
-      duration: 0, // Will be updated when loaded
-      size: file.size,
-      thumbnail: undefined,
-      metadata: undefined
-    }))
-    
-    setMediaFiles(prev => [...prev, ...newMediaFiles])
-  }
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    const newMediaFiles: MediaFile[] = files.map(file => ({
-      id: Date.now().toString() + Math.random(),
-      name: file.name,
-      path: URL.createObjectURL(file),
-      type: file.type.startsWith('video/') ? 'video' as const : 
-            file.type.startsWith('audio/') ? 'audio' as const : 'image' as const,
-      duration: 0,
-      size: file.size,
-      thumbnail: undefined,
-      metadata: undefined
-    }))
-    
-    setMediaFiles(prev => [...prev, ...newMediaFiles])
+  const handleMediaSelect = (media: MediaFile) => {
+    onMediaSelect?.(media)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -61,65 +45,109 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const getFileIcon = (type: string) => {
-    if (type.startsWith('video/')) return '🎥'
-    if (type.startsWith('audio/')) return '🎵'
-    if (type.startsWith('image/')) return '🖼️'
-    return '📄'
+  const formatDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${minutes}:${secs.toString().padStart(2, '0')}`
   }
+
+  const getFileIcon = (type: string) => {
+    switch (type) {
+      case 'video': return '🎥'
+      case 'audio': return '🎵'
+      case 'image': return '🖼️'
+      default: return '📄'
+    }
+  }
+
+  // Filter files based on search query and type
+  const filteredFiles = mediaFiles.filter(file => {
+    const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesType = filterType === 'all' || file.type === filterType
+    return matchesSearch && matchesType
+  })
 
   return (
     <div className="media-library">
       <div className="media-library-header">
         <h3>Media Library</h3>
-        <input
-          type="file"
-          multiple
-          accept="video/*,audio/*,image/*"
-          onChange={handleFileInput}
-          style={{ display: 'none' }}
-          id="media-input"
-        />
-        <label htmlFor="media-input" className="import-btn">
-          Import Media
-        </label>
+        <div className="media-library-controls">
+          <input
+            type="text"
+            placeholder="Search media..."
+            value={searchQuery}
+            onChange={(e) => dispatch({ type: 'mediaLibrary/setSearchQuery', payload: e.target.value })}
+            className="search-input"
+          />
+          <select
+            value={filterType}
+            onChange={(e) => dispatch({ type: 'mediaLibrary/setFilterType', payload: e.target.value })}
+            className="filter-select"
+          >
+            <option value="all">All Types</option>
+            <option value="video">Video</option>
+            <option value="audio">Audio</option>
+            <option value="image">Image</option>
+          </select>
+        </div>
       </div>
-      
-      <div 
-        className={`media-drop-zone ${isDragOver ? 'drag-over' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
+
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+
+      <div className="media-library-content">
         {mediaFiles.length === 0 ? (
-          <div className="drop-placeholder">
-            <div className="drop-icon">📁</div>
-            <p>Drag & drop media files here</p>
-            <p className="drop-hint">or click "Import Media" above</p>
-          </div>
+          <ImportZone onImport={handleImport} />
         ) : (
-          <div className="media-list">
-            {mediaFiles.map(media => (
-              <div 
-                key={media.id}
-                className={`media-item ${selectedMedia?.id === media.id ? 'selected' : ''}`}
-                onClick={() => onMediaSelect(media)}
-              >
-                <div className="media-icon">
-                  {getFileIcon(media.type)}
-                </div>
-                <div className="media-info">
-                  <div className="media-name">{media.name}</div>
-                  <div className="media-details">
-                    {formatFileSize(media.size)}
-                    {media.duration > 0 && ` • ${Math.round(media.duration)}s`}
+          <>
+            <ImportZone onImport={handleImport} className="compact" />
+            
+            <div className="media-list">
+              {filteredFiles.map(media => (
+                <div 
+                  key={media.id}
+                  className={`media-item ${selectedMedia?.id === media.id ? 'selected' : ''}`}
+                  onClick={() => handleMediaSelect(media)}
+                >
+                  <div className="media-thumbnail">
+                    {media.thumbnail ? (
+                      <img src={media.thumbnail} alt={media.name} />
+                    ) : (
+                      <div className="media-icon">
+                        {getFileIcon(media.type)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="media-info">
+                    <div className="media-name" title={media.name}>
+                      {media.name}
+                    </div>
+                    <div className="media-details">
+                      {formatFileSize(media.size)}
+                      {media.duration > 0 && ` • ${formatDuration(media.duration)}`}
+                      {media.metadata.width && media.metadata.height && 
+                        ` • ${media.metadata.width}×${media.metadata.height}`}
+                    </div>
+                    <div className="media-type">
+                      {media.type.toUpperCase()}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      )}
     </div>
   )
 }

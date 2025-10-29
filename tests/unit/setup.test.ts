@@ -8,7 +8,7 @@ describe('Project Setup', () => {
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
     
     expect(pkg.name).toBe('clipforge')
-    expect(pkg.main).toBe('dist/main/main.js')
+    expect(pkg.main).toBe('out/main/main.js')
     expect(pkg.scripts.dev).toBe('electron-vite dev')
     expect(pkg.scripts.build).toBe('electron-vite build')
     expect(pkg.scripts.test).toBe('vitest')
