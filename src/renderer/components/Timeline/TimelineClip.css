@@ -104,8 +104,9 @@
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 8px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .trim-handle-right {
@@ -120,23 +121,25 @@
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 8px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 900;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .trim-handle:hover {
   background: #00b8e6 !important;
-  width: 16px;
-  transform: scale(1.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  width: 20px;
+  transform: scale(1.4);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+  border: 3px solid #ffffff;
 }
 
 .trim-handle-left:hover {
-  left: -8px;
+  left: -10px;
 }
 
 .trim-handle-right:hover {
-  right: -8px;
+  right: -10px;
 }
 
 /* Center drag area */
