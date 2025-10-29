@@ -10,7 +10,7 @@ export interface MediaFile {
   size: number // in bytes
   thumbnail?: string // base64 encoded thumbnail or file path
   metadata: MediaMetadata
-  importedAt: Date
+  importedAt: string // ISO date string for serialization
 }
 
 export interface MediaMetadata {

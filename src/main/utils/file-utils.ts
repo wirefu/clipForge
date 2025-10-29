@@ -145,7 +145,7 @@ export async function createMediaFile(filePath: string): Promise<MediaFile> {
     duration,
     size: stats.size,
     metadata,
-    importedAt: new Date(),
+    importedAt: new Date().toISOString(),
   }
   
   return mediaFile
