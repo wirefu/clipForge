@@ -40,12 +40,71 @@ function ExportModal({
 
   const loadPresets = async () => {
     try {
+      console.log('Loading presets...')
       const result = await window.electronAPI.export.getPresets()
+      console.log('Presets result:', result)
       if (result.success) {
         setPresets(result.presets || [])
+        console.log('Presets loaded:', result.presets)
+      } else {
+        console.error('Failed to load presets:', result.error)
+        // Fallback to hardcoded presets
+        setPresets([
+          {
+            id: 'youtube-1080p',
+            name: 'YouTube 1080p',
+            description: 'High quality for YouTube (1080p, 30fps)',
+            settings: {
+              format: 'mp4',
+              quality: 'high',
+              resolution: { width: 1920, height: 1080 },
+              framerate: 30,
+              bitrate: 8000,
+              audioEnabled: true,
+              audioBitrate: 128,
+              audioSampleRate: 44100,
+              audioChannels: 2
+            }
+          },
+          {
+            id: 'youtube-720p',
+            name: 'YouTube 720p',
+            description: 'Good quality for YouTube (720p, 30fps)',
+            settings: {
+              format: 'mp4',
+              quality: 'medium',
+              resolution: { width: 1280, height: 720 },
+              framerate: 30,
+              bitrate: 5000,
+              audioEnabled: true,
+              audioBitrate: 128,
+              audioSampleRate: 44100,
+              audioChannels: 2
+            }
+          }
+        ])
       }
     } catch (error) {
       console.error('Failed to load presets:', error)
+      // Fallback to hardcoded presets
+      setPresets([
+        {
+          id: 'youtube-1080p',
+          name: 'YouTube 1080p',
+          description: 'High quality for YouTube (1080p, 30fps)',
+          settings: {
+            format: 'mp4',
+            quality: 'high',
+            resolution: { width: 1920, height: 1080 },
+            framerate: 30,
+            bitrate: 8000,
+            audioEnabled: true,
+            audioBitrate: 128,
+            audioSampleRate: 44100,
+            audioChannels: 2
+          }
+        }
+      ])
     }
   }
 
@@ -142,12 +201,19 @@ function ExportModal({
                   className="preset-select"
                 >
                   <option value="">Custom Settings</option>
-                  {presets.map(preset => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.name} - {preset.description}
-                    </option>
-                  ))}
+                  {presets.length > 0 ? (
+                    presets.map(preset => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name} - {preset.description}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="" disabled>Loading presets...</option>
+                  )}
                 </select>
+                <div style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                  Presets loaded: {presets.length}
+                </div>
               </div>
 
               {/* Output Path */}
