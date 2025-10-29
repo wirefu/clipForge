@@ -1,0 +1,64 @@
+/* Home.css */
+.home {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-content {
+  max-width: 800px;
+  text-align: center;
+}
+
+.home-content h2 {
+  font-size: 3em;
+  margin-bottom: 20px;
+  color: var(--primary-color);
+}
+
+.home-content p {
+  font-size: 1.2em;
+  color: var(--text-secondary);
+  margin-bottom: 40px;
+}
+
+.home-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 60px;
+}
+
+.home-actions .btn {
+  padding: 16px 32px;
+  font-size: 16px;
+  min-width: 150px;
+}
+
+.home-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.feature {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.feature h3 {
+  font-size: 1.5em;
+  margin-bottom: 15px;
+  color: var(--primary-color);
+}
+
+.feature p {
+  color: var(--text-secondary);
+  font-size: 1em;
+  margin: 0;
+}

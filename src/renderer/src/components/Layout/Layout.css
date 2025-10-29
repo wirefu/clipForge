@@ -1,0 +1,39 @@
+/* Layout.css */
+.layout {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-header {
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  padding: 20px;
+  text-align: center;
+}
+
+.layout-header h1 {
+  color: var(--primary-color);
+  margin: 0;
+  font-size: 2.5em;
+}
+
+.layout-header p {
+  color: var(--text-secondary);
+  margin: 10px 0 0 0;
+}
+
+.layout-main {
+  flex: 1;
+  padding: 20px;
+  overflow: auto;
+}
+
+.layout-footer {
+  background-color: var(--surface-color);
+  border-top: 1px solid var(--border-color);
+  padding: 10px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
