@@ -37,6 +37,8 @@ export interface VideoPreviewProps {
   isPlaying: boolean
   currentTime: number
   onTimeUpdate: (time: number) => void
+  trimStart?: number
+  trimEnd?: number
 }
 
 export interface TimelineProps {

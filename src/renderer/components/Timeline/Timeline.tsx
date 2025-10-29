@@ -1,8 +1,15 @@
 import { useState, useRef } from 'react'
 import { TimelineProps } from '../../types'
+import TimelineClip from './TimelineClip'
 import './Timeline.css'
 
-function Timeline({ clips, currentTime, onTimeUpdate }: Omit<TimelineProps, 'onAddClip'>) {
+interface TimelineComponentProps extends Omit<TimelineProps, 'onAddClip'> {
+  onUpdateClip?: (clipId: string, updates: Partial<import('../../types').TimelineClip>) => void
+  onSelectClip?: (clipId: string) => void
+  selectedClipId?: string
+}
+
+function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId }: TimelineComponentProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -108,18 +115,14 @@ function Timeline({ clips, currentTime, onTimeUpdate }: Omit<TimelineProps, 'onA
             
             <div className="timeline-clips">
               {clips.map(clip => (
-                <div
+                <TimelineClip
                   key={clip.id}
-                  className="timeline-clip"
-                  style={{
-                    left: `${clip.start}%`,
-                    width: `${clip.duration}%`
-                  }}
-                >
-                  <div className="clip-content">
-                    <span className="clip-name">Clip {clip.id.slice(-4)}</span>
-                  </div>
-                </div>
+                  clip={clip}
+                  timelineWidth={timelineRef.current?.offsetWidth || 800}
+                  onUpdateClip={onUpdateClip || (() => {})}
+                  onSelectClip={onSelectClip || (() => {})}
+                  isSelected={selectedClipId === clip.id}
+                />
               ))}
             </div>
             

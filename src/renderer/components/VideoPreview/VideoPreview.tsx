@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { VideoPreviewProps, MediaFile } from '../../types'
 import './VideoPreview.css'
 
-function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPreviewProps) {
+function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart = 0, trimEnd }: VideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -28,7 +28,15 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPrev
       }
       
       const handleTimeUpdate = () => {
-        onTimeUpdate(video.currentTime)
+        // Convert video time to timeline time considering trim points
+        const videoTime = video.currentTime
+        const timelineTime = videoTime + trimStart
+        onTimeUpdate(timelineTime)
+        
+        // If we have a trim end point and we've reached it, pause the video
+        if (trimEnd && videoTime >= (trimEnd - trimStart)) {
+          video.pause()
+        }
       }
       
       const handleError = (e: any) => {
@@ -45,7 +53,7 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPrev
         video.removeEventListener('error', handleError)
       }
     }
-  }, [media, onTimeUpdate])
+  }, [media, onTimeUpdate, trimStart, trimEnd])
 
   useEffect(() => {
       if (videoRef.current) {
@@ -60,16 +68,21 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPrev
   }, [isPlaying])
 
   useEffect(() => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.1) {
-      videoRef.current.currentTime = currentTime
+    if (videoRef.current && Math.abs(videoRef.current.currentTime - (currentTime - trimStart)) > 0.1) {
+      // Convert timeline time to video time considering trim points
+      const videoTime = Math.max(0, currentTime - trimStart)
+      videoRef.current.currentTime = videoTime
     }
-  }, [currentTime])
+  }, [currentTime, trimStart])
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
+
+  // Calculate trimmed duration
+  const trimmedDuration = trimEnd ? trimEnd - trimStart : duration - trimStart
 
   if (!media) {
     return (
@@ -117,13 +130,13 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPrev
       </div>
       
       <div className="preview-controls">
-        <div className="time-display">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </div>
+          <div className="time-display">
+            {formatTime(currentTime)} / {formatTime(trimmedDuration)}
+          </div>
         <div className="progress-bar">
           <div 
             className="progress-fill"
-            style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+            style={{ width: `${trimmedDuration > 0 ? (currentTime / trimmedDuration) * 100 : 0}%` }}
           />
         </div>
       </div>
@@ -131,9 +144,9 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPrev
       <div className="preview-info">
         <h4>{media.name}</h4>
         <p>{media.type}</p>
-        {isLoaded && (
-          <p>Duration: {formatTime(duration)}</p>
-        )}
+            {isLoaded && (
+              <p>Duration: {formatTime(trimmedDuration)}</p>
+            )}
       </div>
     </div>
   )
