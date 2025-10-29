@@ -39,6 +39,7 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
         const videoTime = video.currentTime
         // Timeline time = clip.start + (current video time - trim start)
         const timelineTime = clipStart + (videoTime - trimStart)
+        console.log('VideoPreview time update:', { videoTime, trimStart, clipStart, timelineTime })
         onTimeUpdate(timelineTime)
         
         // If we have a trim end point and we've reached it, pause the video
@@ -81,6 +82,7 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       // Timeline time = clip.start + (video time - trim start)
       // So: video time = trim start + (timeline time - clip.start)
       const videoTime = Math.max(trimStart, trimStart + (currentTime - clipStart))
+      console.log('VideoPreview seeking to:', { currentTime, clipStart, trimStart, videoTime })
       videoRef.current.currentTime = Math.min(videoTime, trimEnd || videoRef.current.duration)
     }
   }, [currentTime, trimStart, clipStart, trimEnd])
