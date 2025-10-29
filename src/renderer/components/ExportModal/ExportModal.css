@@ -1,0 +1,367 @@
+/* ExportModal component styles */
+.export-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.export-modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.export-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #333;
+  background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+}
+
+.export-modal-header h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background: #333;
+  color: #fff;
+}
+
+.export-modal-content {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Export Progress Styles */
+.export-progress {
+  text-align: center;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.progress-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.progress-percentage {
+  background: #00d4ff;
+  color: #000;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff 0%, #0099cc 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-details {
+  margin-bottom: 20px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-around;
+  color: #888;
+  font-size: 14px;
+}
+
+.progress-info span {
+  background: #2d3748;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.error-message {
+  background: #ff4444;
+  color: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+/* Export Settings Styles */
+.export-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-group label {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.setting-group input,
+.setting-group select {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.setting-group input:focus,
+.setting-group select:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+}
+
+.setting-group input::placeholder {
+  color: #888;
+}
+
+.path-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.path-input {
+  flex: 1;
+}
+
+.browse-button {
+  background: #00d4ff;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.browse-button:hover {
+  background: #0099cc;
+  transform: translateY(-1px);
+}
+
+.preset-select,
+.format-select,
+.quality-select {
+  width: 100%;
+}
+
+.advanced-toggle {
+  background: #4a5568;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.advanced-toggle:hover {
+  background: #5a6578;
+}
+
+.advanced-settings {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 10px;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.setting-row:last-child {
+  margin-bottom: 0;
+}
+
+.resolution-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resolution-input {
+  flex: 1;
+}
+
+.resolution-inputs span {
+  color: #888;
+  font-weight: 600;
+}
+
+.framerate-input,
+.bitrate-input,
+.audio-bitrate-input,
+.sample-rate-input {
+  width: 100%;
+}
+
+.channels-select {
+  width: 100%;
+}
+
+.setting-group label input[type="checkbox"] {
+  width: auto;
+  margin-right: 8px;
+  accent-color: #00d4ff;
+}
+
+/* Footer Styles */
+.export-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #333;
+  background: #1a1a1a;
+}
+
+.cancel-button {
+  background: #4a5568;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-button:hover {
+  background: #5a6578;
+}
+
+.export-button {
+  background: #00d4ff;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-button:hover:not(:disabled) {
+  background: #0099cc;
+  transform: translateY(-1px);
+}
+
+.export-button:disabled {
+  background: #4a5568;
+  color: #888;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .export-modal {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .setting-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .progress-info {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .progress-info span {
+    text-align: center;
+  }
+}
+
+/* Scrollbar Styling */
+.export-modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.export-modal-content::-webkit-scrollbar-track {
+  background: #2d3748;
+  border-radius: 3px;
+}
+
+.export-modal-content::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 3px;
+}
+
+.export-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #5a6578;
+}

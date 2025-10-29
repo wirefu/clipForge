@@ -6,6 +6,7 @@ import appSlice from './slices/app.slice'
 import mediaLibrarySlice from './slices/mediaLibrary.slice'
 import timelineSlice from './slices/timeline.slice'
 import playbackSlice from './slices/playback.slice'
+import exportSlice from './slices/export.slice'
 
 // Persist configuration
 const persistConfig = {
@@ -29,6 +30,7 @@ const rootReducer = combineReducers({
   mediaLibrary: persistReducer(mediaLibraryPersistConfig, mediaLibrarySlice),
   timeline: timelineSlice,
   playback: playbackSlice,
+  export: exportSlice,
 })
 
 // Create persisted reducer

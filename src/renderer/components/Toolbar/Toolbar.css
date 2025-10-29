@@ -125,6 +125,17 @@
   text-align: right;
 }
 
+.export-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #333;
+}
+
+.export-btn.disabled:hover {
+  background-color: #333;
+  transform: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .toolbar {

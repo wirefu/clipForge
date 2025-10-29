@@ -2,7 +2,12 @@ import { useState } from 'react'
 import { ToolbarProps } from '../../types'
 import './Toolbar.css'
 
-function Toolbar({ isPlaying, onPlayPause, currentTime }: ToolbarProps) {
+interface ExtendedToolbarProps extends ToolbarProps {
+  onExport?: () => void
+  canExport?: boolean
+}
+
+function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = false }: ExtendedToolbarProps) {
   const [volume, setVolume] = useState(100)
 
   const formatTime = (time: number) => {
@@ -71,7 +76,12 @@ function Toolbar({ isPlaying, onPlayPause, currentTime }: ToolbarProps) {
           />
           <span className="volume-value">{volume}%</span>
         </div>
-        <button className="toolbar-btn" title="Export">
+        <button 
+          className={`toolbar-btn export-btn ${!canExport ? 'disabled' : ''}`}
+          onClick={onExport}
+          disabled={!canExport}
+          title={canExport ? 'Export Video' : 'Add clips to timeline to export'}
+        >
           📤
         </button>
       </div>

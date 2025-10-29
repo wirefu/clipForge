@@ -1,6 +1,9 @@
 // Shared types for ClipForge
 // These types are used across main and renderer processes
 
+// Re-export export types
+export * from '../renderer/types/export.types'
+
 export interface MediaFile {
   id: string
   name: string
