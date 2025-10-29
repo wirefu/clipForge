@@ -3,7 +3,8 @@ import { promises as fs } from 'fs'
 import { extname, basename, dirname } from 'path'
 import { homedir } from 'os'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
-import { validateVideoFile, createMediaFile, generateThumbnail, isValidMediaFile } from '../utils/file-utils'
+import { validateVideoFile, createMediaFile, isValidMediaFile } from '../utils/file-utils'
+import { thumbnailService } from '../services/thumbnail.service'
 import { MediaFile, ImportResult, MediaMetadata } from '../../renderer/types/media.types'
 
 /**
@@ -48,7 +49,16 @@ ipcMain.handle(IPC_CHANNELS.FILE.IMPORT, async (): Promise<ImportResult> => {
     
     // Generate thumbnail
     if (mediaFile.type === 'video') {
-      mediaFile.thumbnail = await generateThumbnail(filePath)
+      const thumbnailResult = await thumbnailService.generateThumbnail(filePath, {
+        width: 320,
+        height: 180,
+        timeOffset: 1,
+        quality: 2
+      })
+      
+      if (thumbnailResult.success && thumbnailResult.thumbnailPath) {
+        mediaFile.thumbnail = thumbnailResult.thumbnailPath
+      }
     }
     
     // Store the file
@@ -91,7 +101,16 @@ ipcMain.handle('file:import-drop', async (event, filePaths: string[]): Promise<I
       
       // Generate thumbnail
       if (mediaFile.type === 'video') {
-        mediaFile.thumbnail = await generateThumbnail(filePath)
+        const thumbnailResult = await thumbnailService.generateThumbnail(filePath, {
+          width: 320,
+          height: 180,
+          timeOffset: 1,
+          quality: 2
+        })
+        
+        if (thumbnailResult.success && thumbnailResult.thumbnailPath) {
+          mediaFile.thumbnail = thumbnailResult.thumbnailPath
+        }
       }
       
       // Store the file

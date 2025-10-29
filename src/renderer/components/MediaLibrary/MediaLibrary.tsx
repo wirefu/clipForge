@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { MediaFile } from '../types/media.types'
 import ImportZone from './ImportZone'
+import MediaItem from './MediaItem'
 import './MediaLibrary.css'
 
 interface MediaLibraryProps {
@@ -34,29 +35,16 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
   }
 
   const handleMediaSelect = (media: MediaFile) => {
+    dispatch({ type: 'mediaLibrary/selectMediaFile', payload: media })
     onMediaSelect?.(media)
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${minutes}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const getFileIcon = (type: string) => {
-    switch (type) {
-      case 'video': return '🎥'
-      case 'audio': return '🎵'
-      case 'image': return '🖼️'
-      default: return '📄'
+  const handleMediaDelete = (mediaId: string) => {
+    dispatch({ type: 'mediaLibrary/removeMediaFile', payload: mediaId })
+    // If the deleted media was selected, clear selection
+    if (selectedMedia?.id === mediaId) {
+      dispatch({ type: 'mediaLibrary/selectMediaFile', payload: null })
+      onMediaSelect?.(null)
     }
   }
 
@@ -105,37 +93,15 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
           <>
             <ImportZone onImport={handleImport} className="compact" />
             
-            <div className="media-list">
+            <div className="media-grid">
               {filteredFiles.map(media => (
-                <div 
+                <MediaItem
                   key={media.id}
-                  className={`media-item ${selectedMedia?.id === media.id ? 'selected' : ''}`}
-                  onClick={() => handleMediaSelect(media)}
-                >
-                  <div className="media-thumbnail">
-                    {media.thumbnail ? (
-                      <img src={media.thumbnail} alt={media.name} />
-                    ) : (
-                      <div className="media-icon">
-                        {getFileIcon(media.type)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="media-info">
-                    <div className="media-name" title={media.name}>
-                      {media.name}
-                    </div>
-                    <div className="media-details">
-                      {formatFileSize(media.size)}
-                      {media.duration > 0 && ` • ${formatDuration(media.duration)}`}
-                      {media.metadata.width && media.metadata.height && 
-                        ` • ${media.metadata.width}×${media.metadata.height}`}
-                    </div>
-                    <div className="media-type">
-                      {media.type.toUpperCase()}
-                    </div>
-                  </div>
-                </div>
+                  media={media}
+                  isSelected={selectedMedia?.id === media.id}
+                  onSelect={handleMediaSelect}
+                  onDelete={handleMediaDelete}
+                />
               ))}
             </div>
           </>
