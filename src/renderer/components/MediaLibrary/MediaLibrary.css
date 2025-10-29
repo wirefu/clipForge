@@ -1,0 +1,141 @@
+.media-library {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #252525;
+}
+
+.media-library-header {
+  padding: 20px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.media-library-header h3 {
+  color: #00d4ff;
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.import-btn {
+  background-color: #00d4ff;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.import-btn:hover {
+  background-color: #00b8e6;
+}
+
+.media-drop-zone {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.drop-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  border: 2px dashed #444;
+  border-radius: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.drop-placeholder.drag-over {
+  border-color: #00d4ff;
+  background-color: rgba(0, 212, 255, 0.1);
+  color: #00d4ff;
+}
+
+.drop-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+}
+
+.drop-hint {
+  font-size: 0.9em;
+  color: #555;
+  margin-top: 5px;
+}
+
+.media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.media-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background-color: #2a2a2a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.media-item:hover {
+  background-color: #333;
+  border-color: #444;
+}
+
+.media-item.selected {
+  background-color: #1a3a4a;
+  border-color: #00d4ff;
+}
+
+.media-icon {
+  font-size: 1.5em;
+  margin-right: 12px;
+  min-width: 30px;
+}
+
+.media-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.media-name {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.media-details {
+  color: #888;
+  font-size: 0.8em;
+}
+
+/* Scrollbar styling */
+.media-drop-zone::-webkit-scrollbar {
+  width: 6px;
+}
+
+.media-drop-zone::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.media-drop-zone::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.media-drop-zone::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

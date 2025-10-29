@@ -1,6 +1,17 @@
+import { useNavigate } from 'react-router-dom'
 import './Home.css'
 
 function Home() {
+  const navigate = useNavigate()
+
+  const handleStartEditing = () => {
+    navigate('/editor')
+  }
+
+  const handleOpenSettings = () => {
+    navigate('/settings')
+  }
+
   return (
     <div className="home">
       <div className="home-content">
@@ -9,11 +20,11 @@ function Home() {
         <p>🎬 Hot reload is working!</p>
         
         <div className="home-actions">
-          <button className="btn btn-primary">
-            Import Media
+          <button className="btn btn-primary" onClick={handleStartEditing}>
+            Start Editing
           </button>
-          <button className="btn btn-secondary">
-            Start Recording
+          <button className="btn btn-secondary" onClick={handleOpenSettings}>
+            Settings
           </button>
         </div>
         
