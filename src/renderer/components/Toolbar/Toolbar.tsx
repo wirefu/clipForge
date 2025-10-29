@@ -80,10 +80,17 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
         </div>
         <button 
           className={`toolbar-btn export-btn ${!canExport ? 'disabled' : ''}`}
-          onClick={() => {
+          onMouseDown={() => console.log('Export button mouse down!')}
+          onMouseUp={() => console.log('Export button mouse up!')}
+          onMouseEnter={() => console.log('Export button mouse enter!')}
+          onMouseLeave={() => console.log('Export button mouse leave!')}
+          onClick={(e) => {
             console.log('Export button clicked in Toolbar!')
+            console.log('Event:', e)
             console.log('canExport:', canExport)
             console.log('onExport function:', onExport)
+            e.preventDefault()
+            e.stopPropagation()
             if (onExport) {
               onExport()
             } else {
@@ -94,7 +101,9 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
           title={canExport ? 'Export Video' : 'Add clips to timeline to export'}
           style={{ 
             border: canExport ? '2px solid #00ff00' : '2px solid #ff0000',
-            backgroundColor: canExport ? '#00ff0020' : '#ff000020'
+            backgroundColor: canExport ? '#00ff0020' : '#ff000020',
+            zIndex: 9999,
+            position: 'relative'
           }}
         >
           📤 {canExport ? '✓' : '✗'}
