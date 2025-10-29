@@ -9,6 +9,8 @@ interface ExtendedToolbarProps extends ToolbarProps {
 
 function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = false }: ExtendedToolbarProps) {
   const [volume, setVolume] = useState(100)
+  
+  console.log('Toolbar rendered with canExport:', canExport, 'onExport:', !!onExport)
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
@@ -90,8 +92,12 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
           }}
           disabled={!canExport}
           title={canExport ? 'Export Video' : 'Add clips to timeline to export'}
+          style={{ 
+            border: canExport ? '2px solid #00ff00' : '2px solid #ff0000',
+            backgroundColor: canExport ? '#00ff0020' : '#ff000020'
+          }}
         >
-          📤
+          📤 {canExport ? '✓' : '✗'}
         </button>
       </div>
     </div>
