@@ -34,6 +34,10 @@ export const IPC_CHANNELS = {
     GET_EXPORT_PROGRESS: 'export:progress',
     CANCEL_EXPORT: 'export:cancel',
     GET_EXPORT_STATUS: 'export:status',
+    SELECT_OUTPUT_DIR: 'export:select-output-dir',
+    SELECT_OUTPUT_FILE: 'export:select-output-file',
+    GET_PRESETS: 'export:get-presets',
+    VALIDATE_SETTINGS: 'export:validate-settings',
   },
   
   // App operations

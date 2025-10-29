@@ -86,6 +86,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     
     getStatus: (): Promise<ExportProgress> => 
       ipcRenderer.invoke(IPC_CHANNELS.EXPORT.GET_EXPORT_STATUS),
+    
+    selectOutputDir: (): Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }> => 
+      ipcRenderer.invoke(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_DIR),
+    
+    selectOutputFile: (defaultFilename: string): Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }> => 
+      ipcRenderer.invoke(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_FILE, { defaultFilename }),
+    
+    getPresets: (): Promise<{ success: boolean; presets?: any[]; error?: string }> => 
+      ipcRenderer.invoke(IPC_CHANNELS.EXPORT.GET_PRESETS),
+    
+    validateSettings: (settings: ExportSettings): Promise<{ success: boolean; errors?: string[] }> => 
+      ipcRenderer.invoke(IPC_CHANNELS.EXPORT.VALIDATE_SETTINGS, { settings }),
   },
   
   // App operations
@@ -172,6 +184,10 @@ declare global {
         getProgress: () => Promise<ExportProgress>
         cancelExport: () => Promise<void>
         getStatus: () => Promise<ExportProgress>
+        selectOutputDir: () => Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }>
+        selectOutputFile: (defaultFilename: string) => Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }>
+        getPresets: () => Promise<{ success: boolean; presets?: any[]; error?: string }>
+        validateSettings: (settings: ExportSettings) => Promise<{ success: boolean; errors?: string[] }>
       }
       app: {
         getVersion: () => Promise<string>

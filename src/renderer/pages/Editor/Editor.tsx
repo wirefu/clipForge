@@ -43,9 +43,9 @@ function Editor() {
     window.electronAPI.on('export:error', handleExportError)
 
     return () => {
-      window.electronAPI.removeListener('export:progress', handleExportProgress)
-      window.electronAPI.removeListener('export:complete', handleExportComplete)
-      window.electronAPI.removeListener('export:error', handleExportError)
+      window.electronAPI.off('export:progress', handleExportProgress)
+      window.electronAPI.off('export:complete', handleExportComplete)
+      window.electronAPI.off('export:error', handleExportError)
     }
   }, [dispatch])
 

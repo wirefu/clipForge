@@ -40,9 +40,9 @@ function ExportModal({
 
   const loadPresets = async () => {
     try {
-      const result = await window.electronAPI.invoke('export:get-presets')
+      const result = await window.electronAPI.export.getPresets()
       if (result.success) {
-        setPresets(result.presets)
+        setPresets(result.presets || [])
       }
     } catch (error) {
       console.error('Failed to load presets:', error)
@@ -59,7 +59,7 @@ function ExportModal({
 
   const handleOutputPathSelect = async () => {
     try {
-      const result = await window.electronAPI.invoke('export:select-output-dir')
+      const result = await window.electronAPI.export.selectOutputDir()
       if (result.success && result.outputPath) {
         setSettings(prev => ({ ...prev, outputPath: result.outputPath }))
       }
