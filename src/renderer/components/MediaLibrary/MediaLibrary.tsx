@@ -1,13 +1,13 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { setError } from '../../store/slices/mediaLibrary.slice'
-import { MediaFile } from '../types/media.types'
+import { MediaFile } from '../../types'
 import ImportZone from './ImportZone'
 import MediaItem from './MediaItem'
 import './MediaLibrary.css'
 
 interface MediaLibraryProps {
-  onMediaSelect?: (media: MediaFile) => void
+  onMediaSelect?: (media: MediaFile | null) => void
   selectedMedia?: MediaFile | null
 }
 

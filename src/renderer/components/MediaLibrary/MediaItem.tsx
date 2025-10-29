@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { MediaFile } from '../../types/media.types'
+import { MediaFile } from '../../types'
 import './MediaItem.css'
 
 interface MediaItemProps {
@@ -80,12 +80,13 @@ function MediaItem({
       {/* Thumbnail */}
       <div className="media-thumbnail">
         {media.thumbnail && !imageError ? (
-          <img
-            src={`file://${media.thumbnail}`}
-            alt={media.name}
-            onError={() => setImageError(true)}
-            className="thumbnail-image"
-          />
+        <img
+          src={`file://${media.thumbnail}`}
+          alt={media.name}
+          onError={() => setImageError(true)}
+          onLoad={() => {}}
+          className="thumbnail-image"
+        />
         ) : (
           <div className="thumbnail-placeholder">
             <div className="placeholder-icon">

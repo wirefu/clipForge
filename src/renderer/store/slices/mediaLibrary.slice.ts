@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { MediaFile } from '../types/media.types'
+import { MediaFile } from '../../types'
 
 interface MediaLibraryState {
   mediaFiles: MediaFile[]
@@ -30,7 +30,7 @@ const mediaLibrarySlice = createSlice({
       state.mediaFiles.push(...action.payload)
     },
     removeMediaFile: (state, action: PayloadAction<string>) => {
-      state.mediaFiles = state.mediaFiles.filter(file => file.id !== action.payload)
+      state.mediaFiles = state.mediaFiles.filter((file: MediaFile) => file.id !== action.payload)
       if (state.selectedFile?.id === action.payload) {
         state.selectedFile = null
       }

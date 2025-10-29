@@ -8,7 +8,6 @@ import type {
   ExportSettings,
   ExportProgress,
   ProjectData,
-  FileDialogResult,
   AppInfo,
   WindowState
 } from '../shared/types'

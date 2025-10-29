@@ -8,14 +8,25 @@ export interface MediaFile {
   type: 'video' | 'audio' | 'image'
   duration: number // in seconds
   size: number // in bytes
-  thumbnail?: string // base64 encoded thumbnail
-  metadata?: {
-    width?: number
-    height?: number
-    fps?: number
-    bitrate?: number
-    codec?: string
-  }
+  thumbnail?: string // base64 encoded thumbnail or file path
+  metadata: MediaMetadata
+  importedAt: string // ISO date string for serialization
+  isBlob?: boolean // Flag to indicate if this is a blob URL (for drag and drop files)
+}
+
+export interface MediaMetadata {
+  width?: number
+  height?: number
+  fps?: number
+  bitrate?: number
+  codec?: string
+  audioCodec?: string
+  audioChannels?: number
+  audioSampleRate?: number
+  aspectRatio?: string
+  colorSpace?: string
+  hasAudio?: boolean
+  hasVideo?: boolean
 }
 
 export interface TimelineClip {
@@ -111,6 +122,19 @@ export interface IpcResponse<T = any> {
   success: boolean
   data?: T
   error?: string
+}
+
+// File import/export types
+export interface ImportResult {
+  success: boolean
+  file?: MediaFile
+  error?: string
+}
+
+export interface FileValidationResult {
+  isValid: boolean
+  error?: string
+  warnings?: string[]
 }
 
 // File dialog types

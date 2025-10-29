@@ -1,7 +1,8 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, protocol } from 'electron'
 import { join } from 'path'
 import { setupIpcHandlers } from './ipc'
 import { createMenu } from './menu'
+
 
 let mainWindow: BrowserWindow | null = null
 
@@ -18,7 +19,8 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true,
+      webSecurity: false, // Disable web security to allow file:// URLs
+      allowRunningInsecureContent: true, // Allow video playback
     },
     titleBarStyle: 'hiddenInset',
     show: false, // Don't show until ready

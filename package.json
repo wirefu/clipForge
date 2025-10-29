@@ -54,11 +54,13 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/react-router-dom": "^5.3.3",
+    "@videojs/react": "^0.1.0-preview.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.4",
     "redux-persist": "^6.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "video.js": "^8.23.4"
   }
 }

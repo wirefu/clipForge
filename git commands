@@ -1,0 +1,8 @@
+git add .
+git status
+git commit -m "PR-03: Fix TypeScript errors"
+git checkout -b feature/PR-04-file-import
+git push origin feature/PR-04-file-import
+git remote -v
+
+git remote set-url origin git@github.com:wirefu/clipForge.git
