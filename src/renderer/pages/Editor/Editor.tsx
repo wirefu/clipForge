@@ -8,9 +8,10 @@ import './Editor.css'
 
 function Editor() {
   const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null)
-  const [timelineClips] = useState<TimelineClip[]>([])
+  const [timelineClips, setTimelineClips] = useState<TimelineClip[]>([])
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
+  const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
 
   const handleMediaSelect = (media: MediaFile) => {
     setSelectedMedia(media)
@@ -23,6 +24,22 @@ function Editor() {
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time)
+  }
+
+  const handleAddClip = (clip: TimelineClip) => {
+    setTimelineClips(prev => [...prev, clip])
+  }
+
+  const handleUpdateClip = (clipId: string, updates: Partial<TimelineClip>) => {
+    setTimelineClips(prev => 
+      prev.map(clip => 
+        clip.id === clipId ? { ...clip, ...updates } : clip
+      )
+    )
+  }
+
+  const handleSelectClip = (clipId: string) => {
+    setSelectedClipId(clipId)
   }
 
   return (
@@ -66,6 +83,10 @@ function Editor() {
           clips={timelineClips}
           currentTime={currentTime}
           onTimeUpdate={handleTimeUpdate}
+          onAddClip={handleAddClip}
+          onUpdateClip={handleUpdateClip}
+          onSelectClip={handleSelectClip}
+          selectedClipId={selectedClipId}
         />
       </div>
     </div>

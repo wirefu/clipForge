@@ -31,6 +31,11 @@ function MediaItem({
     }
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(media))
+    e.dataTransfer.effectAllowed = 'copy'
+  }
+
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     // Could implement context menu here
@@ -76,6 +81,8 @@ function MediaItem({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onContextMenu={handleContextMenu}
+      draggable
+      onDragStart={handleDragStart}
     >
       {/* Thumbnail */}
       <div className="media-thumbnail">

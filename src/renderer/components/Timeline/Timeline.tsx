@@ -7,9 +7,10 @@ interface TimelineComponentProps extends Omit<TimelineProps, 'onAddClip'> {
   onUpdateClip?: (clipId: string, updates: Partial<import('../../types').TimelineClip>) => void
   onSelectClip?: (clipId: string) => void
   selectedClipId?: string
+  onAddClip?: (clip: import('../../types').TimelineClip) => void
 }
 
-function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId }: TimelineComponentProps) {
+function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId, onAddClip }: TimelineComponentProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -48,6 +49,48 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
 
   const handleMouseUp = () => {
     setIsDragging(false)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    
+    if (!onAddClip || !timelineRef.current) return
+
+    try {
+      // Get the media data from the drag event
+      const mediaData = e.dataTransfer.getData('application/json')
+      if (!mediaData) return
+
+      const media = JSON.parse(mediaData)
+      
+      // Calculate drop position
+      const rect = timelineRef.current.getBoundingClientRect()
+      const dropX = e.clientX - rect.left
+      const timelineWidth = rect.width
+      const dropTime = (dropX / timelineWidth) * 100 // Convert to percentage
+
+      // Create a new timeline clip
+      const newClip: import('../../types').TimelineClip = {
+        id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        mediaFileId: media.id,
+        trackId: 'track-1', // Default to first track
+        start: Math.max(0, Math.min(dropTime, 100 - (media.duration || 10))),
+        duration: media.duration || 10,
+        trimStart: 0,
+        trimEnd: media.duration || 10,
+        volume: 1,
+        muted: false
+      }
+
+      onAddClip(newClip)
+    } catch (error) {
+      console.error('Error adding clip to timeline:', error)
+    }
   }
 
   const formatTime = (time: number) => {
@@ -99,6 +142,8 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           >
             <div className="timeline-ruler">
               {timeMarkers.map(marker => (
