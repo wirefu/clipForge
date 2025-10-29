@@ -91,8 +91,8 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPrev
             ref={videoRef}
             src={getMediaUrl(media)}
             className="preview-video"
-            controls={false}
-            muted
+            controls={true}
+            muted={false}
           />
         ) : (media.type === 'audio' || media.type.startsWith('audio/')) ? (
           <div className="audio-preview">

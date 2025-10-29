@@ -113,6 +113,70 @@ const timelineSlice = createSlice({
         state.tracks[trackIndex] = { ...state.tracks[trackIndex], ...updates }
       }
     },
+    // Trim functionality actions
+    setClipInPoint: (state, action: PayloadAction<{ clipId: string; inPoint: number }>) => {
+      const { clipId, inPoint } = action.payload
+      const clipIndex = state.clips.findIndex(clip => clip.id === clipId)
+      if (clipIndex !== -1) {
+        const clip = state.clips[clipIndex]
+        // Ensure inPoint is within bounds and less than trimEnd
+        const maxInPoint = Math.min(clip.trimEnd, clip.duration)
+        state.clips[clipIndex].trimStart = Math.max(0, Math.min(inPoint, maxInPoint))
+      }
+      // Update track clips
+      state.tracks.forEach(track => {
+        const trackClipIndex = track.clips.findIndex(clip => clip.id === clipId)
+        if (trackClipIndex !== -1) {
+          const clip = track.clips[trackClipIndex]
+          const maxInPoint = Math.min(clip.trimEnd, clip.duration)
+          track.clips[trackClipIndex].trimStart = Math.max(0, Math.min(inPoint, maxInPoint))
+        }
+      })
+    },
+    setClipOutPoint: (state, action: PayloadAction<{ clipId: string; outPoint: number }>) => {
+      const { clipId, outPoint } = action.payload
+      const clipIndex = state.clips.findIndex(clip => clip.id === clipId)
+      if (clipIndex !== -1) {
+        const clip = state.clips[clipIndex]
+        // Ensure outPoint is within bounds and greater than trimStart
+        const minOutPoint = Math.max(clip.trimStart, 0)
+        state.clips[clipIndex].trimEnd = Math.max(minOutPoint, Math.min(outPoint, clip.duration))
+      }
+      // Update track clips
+      state.tracks.forEach(track => {
+        const trackClipIndex = track.clips.findIndex(clip => clip.id === clipId)
+        if (trackClipIndex !== -1) {
+          const clip = track.clips[trackClipIndex]
+          const minOutPoint = Math.max(clip.trimStart, 0)
+          track.clips[trackClipIndex].trimEnd = Math.max(minOutPoint, Math.min(outPoint, clip.duration))
+        }
+      })
+    },
+    trimClip: (state, action: PayloadAction<{ clipId: string; inPoint: number; outPoint: number }>) => {
+      const { clipId, inPoint, outPoint } = action.payload
+      const clipIndex = state.clips.findIndex(clip => clip.id === clipId)
+      if (clipIndex !== -1) {
+        const clip = state.clips[clipIndex]
+        // Validate and constrain trim points
+        const validInPoint = Math.max(0, Math.min(inPoint, clip.duration))
+        const validOutPoint = Math.max(validInPoint, Math.min(outPoint, clip.duration))
+        
+        state.clips[clipIndex].trimStart = validInPoint
+        state.clips[clipIndex].trimEnd = validOutPoint
+      }
+      // Update track clips
+      state.tracks.forEach(track => {
+        const trackClipIndex = track.clips.findIndex(clip => clip.id === clipId)
+        if (trackClipIndex !== -1) {
+          const clip = track.clips[trackClipIndex]
+          const validInPoint = Math.max(0, Math.min(inPoint, clip.duration))
+          const validOutPoint = Math.max(validInPoint, Math.min(outPoint, clip.duration))
+          
+          track.clips[trackClipIndex].trimStart = validInPoint
+          track.clips[trackClipIndex].trimEnd = validOutPoint
+        }
+      })
+    },
   },
 })
 
@@ -129,6 +193,9 @@ export const {
   addTrack,
   removeTrack,
   updateTrack,
+  setClipInPoint,
+  setClipOutPoint,
+  trimClip,
 } = timelineSlice.actions
 
 export default timelineSlice.reducer
