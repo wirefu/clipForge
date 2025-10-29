@@ -87,6 +87,7 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
         muted: false
       }
 
+      console.log('Adding clip to timeline:', newClip)
       onAddClip(newClip)
     } catch (error) {
       console.error('Error adding clip to timeline:', error)
@@ -126,6 +127,9 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
         </div>
         <div className="timeline-info">
           <span>{formatTime(currentTime)}</span>
+          <span style={{ marginLeft: '20px', color: '#888' }}>
+            Clips: {clips.length}
+          </span>
         </div>
       </div>
       

@@ -128,13 +128,14 @@
 
 .timeline-clip {
   position: absolute;
-  top: 10px;
-  height: 40px;
+  top: 5px;
+  height: 30px;
   background-color: #00d4ff;
   border-radius: 4px;
   cursor: move;
   border: 2px solid transparent;
   transition: border-color 0.2s ease;
+  z-index: 5;
 }
 
 .timeline-clip:hover {

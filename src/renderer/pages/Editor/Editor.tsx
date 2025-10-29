@@ -27,7 +27,12 @@ function Editor() {
   }
 
   const handleAddClip = (clip: TimelineClip) => {
-    setTimelineClips(prev => [...prev, clip])
+    console.log('Editor: Adding clip to state:', clip)
+    setTimelineClips(prev => {
+      const newClips = [...prev, clip]
+      console.log('Editor: Updated clips array:', newClips)
+      return newClips
+    })
   }
 
   const handleUpdateClip = (clipId: string, updates: Partial<TimelineClip>) => {
