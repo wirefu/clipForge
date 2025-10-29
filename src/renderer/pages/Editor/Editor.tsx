@@ -148,7 +148,12 @@ function Editor() {
               isPlaying={isPlaying}
               onPlayPause={handlePlayPause}
               currentTime={currentTime}
-              onExport={() => setShowExportModal(true)}
+              onExport={() => {
+                console.log('Export button clicked!')
+                console.log('Current timelineClips:', timelineClips.length)
+                console.log('Setting showExportModal to true')
+                setShowExportModal(true)
+              }}
               canExport={timelineClips.length > 0}
             />
           </div>
@@ -196,6 +201,7 @@ function Editor() {
       </div>
 
       {/* Export Modal */}
+      {console.log('Rendering ExportModal with isOpen:', showExportModal)}
       <ExportModal
         isOpen={showExportModal}
         onClose={handleExportClose}

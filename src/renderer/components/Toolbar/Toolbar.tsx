@@ -78,7 +78,16 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
         </div>
         <button 
           className={`toolbar-btn export-btn ${!canExport ? 'disabled' : ''}`}
-          onClick={onExport}
+          onClick={() => {
+            console.log('Export button clicked in Toolbar!')
+            console.log('canExport:', canExport)
+            console.log('onExport function:', onExport)
+            if (onExport) {
+              onExport()
+            } else {
+              console.error('onExport function is not defined!')
+            }
+          }}
           disabled={!canExport}
           title={canExport ? 'Export Video' : 'Add clips to timeline to export'}
         >
