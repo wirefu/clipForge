@@ -13,12 +13,19 @@ import type {
   WindowState
 } from '../shared/types'
 
+// Import result type for file operations
+interface ImportResult {
+  success: boolean
+  file?: MediaFile
+  error?: string
+}
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
   file: {
-    import: (): Promise<FileDialogResult> => 
+    import: (): Promise<ImportResult> => 
       ipcRenderer.invoke(IPC_CHANNELS.FILE.IMPORT),
     
     export: (settings: ExportSettings): Promise<string | null> => 
@@ -142,7 +149,7 @@ declare global {
   interface Window {
     electronAPI: {
       file: {
-        import: () => Promise<FileDialogResult>
+        import: () => Promise<ImportResult>
         export: (settings: ExportSettings) => Promise<string | null>
         saveProject: (project: ProjectData) => Promise<string | null>
         loadProject: () => Promise<ProjectData | null>

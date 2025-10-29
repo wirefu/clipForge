@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
+import { setError } from '../../store/slices/mediaLibrary.slice'
 import { MediaFile } from '../types/media.types'
 import ImportZone from './ImportZone'
 import MediaItem from './MediaItem'
@@ -14,10 +15,14 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
   const dispatch = useAppDispatch()
   const { mediaFiles, isLoading, error, searchQuery, filterType } = useAppSelector(state => state.mediaLibrary)
 
-  // Load imported files on component mount
+  // Load imported files on component mount and clear any existing errors
   useEffect(() => {
     const loadImportedFiles = async () => {
       try {
+        // Clear any existing error state
+        dispatch(setError(null))
+        // Clear localStorage to remove persisted error state
+        localStorage.removeItem('persist:mediaLibrary')
         // This would call the main process to get imported files
         // For now, we'll use the Redux state
         console.log('Loading imported files...')
@@ -27,7 +32,7 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
     }
 
     loadImportedFiles()
-  }, [])
+  }, [dispatch])
 
   const handleImport = (files: MediaFile[]) => {
     console.log('Files imported:', files)
@@ -82,7 +87,14 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
 
       {error && (
         <div className="error-message">
-          {error}
+          <span>{error}</span>
+          <button 
+            className="error-dismiss" 
+            onClick={() => dispatch(setError(null))}
+            title="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
 

@@ -15,10 +15,18 @@ const persistConfig = {
   blacklist: ['playback'], // Don't persist playback state
 }
 
+// Media library persist config - exclude error state
+const mediaLibraryPersistConfig = {
+  key: 'mediaLibrary',
+  storage,
+  whitelist: ['mediaFiles', 'selectedFile', 'searchQuery', 'filterType'], // Only persist these fields
+  blacklist: ['isLoading', 'error'], // Don't persist loading and error states
+}
+
 // Combine reducers
 const rootReducer = combineReducers({
   app: appSlice,
-  mediaLibrary: mediaLibrarySlice,
+  mediaLibrary: persistReducer(mediaLibraryPersistConfig, mediaLibrarySlice),
   timeline: timelineSlice,
   playback: playbackSlice,
 })
