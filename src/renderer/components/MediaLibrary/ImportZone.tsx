@@ -28,19 +28,24 @@ function ImportZone({ onImport, className = '' }: ImportZoneProps) {
 
       for (const file of fileArray) {
         try {
-          // Convert File to path-like object for validation
-          const filePath = URL.createObjectURL(file)
-          
-          // Call the main process to import the file
-          const result: ImportResult = await window.electronAPI.file.import()
-          
-          if (result.success && result.file) {
-            importedFiles.push(result.file)
-            dispatch(addMediaFile(result.file))
-          } else {
-            console.error('Import failed:', result.error)
-            dispatch(setError(result.error || 'Import failed'))
+          // For drag and drop, we need to handle the file differently
+          // Since we can't access the file path directly from File objects,
+          // we'll need to create a temporary MediaFile object
+          const mediaFile: MediaFile = {
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: file.name,
+            path: URL.createObjectURL(file),
+            type: file.type.startsWith('video/') ? 'video' : 
+                  file.type.startsWith('audio/') ? 'audio' : 
+                  file.type.startsWith('image/') ? 'image' : 'video',
+            duration: 0, // Will be updated if it's a video/audio file
+            size: file.size,
+            metadata: {},
+            importedAt: new Date().toISOString()
           }
+
+          importedFiles.push(mediaFile)
+          dispatch(addMediaFile(mediaFile))
         } catch (error) {
           console.error('File import error:', error)
           dispatch(setError(`Failed to import ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`))
@@ -93,7 +98,10 @@ function ImportZone({ onImport, className = '' }: ImportZoneProps) {
         dispatch(addMediaFile(result.file))
         onImport?.([result.file])
       } else {
-        dispatch(setError(result.error || 'No file selected'))
+        // Only show error if it's not a cancellation
+        if (result.error && !result.error.includes('No files selected')) {
+          dispatch(setError(result.error))
+        }
       }
     } catch (error) {
       console.error('File picker error:', error)
