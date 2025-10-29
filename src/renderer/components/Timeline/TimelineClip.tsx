@@ -20,6 +20,7 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
     e.stopPropagation()
     e.preventDefault()
     
+    console.log('Mouse down on handle:', handle)
     setIsDragging(handle)
     setDragStart({
       x: e.clientX,
@@ -43,6 +44,7 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
     } else if (isDragging === 'right') {
       // Dragging right handle (trim end)
       const newTrimEnd = Math.max(dragStart.trimEnd + deltaTime, clip.trimStart + 0.1)
+      console.log('Right handle drag:', { deltaX, deltaTime, newTrimEnd, originalTrimEnd: dragStart.trimEnd })
       onUpdateClip(clip.id, { trimEnd: Math.min(newTrimEnd, clip.duration) })
     } else if (isDragging === 'center') {
       // Dragging entire clip
