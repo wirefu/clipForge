@@ -25,7 +25,7 @@ describe('Project Setup', () => {
     
     // Electron dependencies
     expect(pkg.devDependencies.electron).toBeDefined()
-    expect(pkg.devDependencies['vite-plugin-electron']).toBeDefined()
+    expect(pkg.devDependencies['electron-vite']).toBeDefined()
     
     // TypeScript dependencies
     expect(pkg.dependencies.typescript).toBeDefined()
@@ -72,7 +72,6 @@ describe('Project Setup', () => {
     
     expect(fs.existsSync(path.join(rootPath, 'package.json'))).toBe(true)
     expect(fs.existsSync(path.join(rootPath, 'tsconfig.json'))).toBe(true)
-    expect(fs.existsSync(path.join(rootPath, 'vite.config.ts'))).toBe(true)
     expect(fs.existsSync(path.join(rootPath, 'electron.vite.config.ts'))).toBe(true)
     expect(fs.existsSync(path.join(rootPath, '.eslintrc.json'))).toBe(true)
     expect(fs.existsSync(path.join(rootPath, '.prettierrc.json'))).toBe(true)
