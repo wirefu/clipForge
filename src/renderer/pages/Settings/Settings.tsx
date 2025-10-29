@@ -10,7 +10,7 @@ function Settings() {
     language: 'en'
   })
 
-  const handleSettingChange = (key, value) => {
+  const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

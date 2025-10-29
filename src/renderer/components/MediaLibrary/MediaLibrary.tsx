@@ -24,11 +24,13 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
     const newMediaFiles: MediaFile[] = files.map(file => ({
       id: Date.now().toString() + Math.random(),
       name: file.name,
-      type: file.type,
-      size: file.size,
+      path: URL.createObjectURL(file),
+      type: file.type.startsWith('video/') ? 'video' as const : 
+            file.type.startsWith('audio/') ? 'audio' as const : 'image' as const,
       duration: 0, // Will be updated when loaded
-      thumbnail: null,
-      file: file
+      size: file.size,
+      thumbnail: undefined,
+      metadata: undefined
     }))
     
     setMediaFiles(prev => [...prev, ...newMediaFiles])
@@ -39,11 +41,13 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
     const newMediaFiles: MediaFile[] = files.map(file => ({
       id: Date.now().toString() + Math.random(),
       name: file.name,
-      type: file.type,
-      size: file.size,
+      path: URL.createObjectURL(file),
+      type: file.type.startsWith('video/') ? 'video' as const : 
+            file.type.startsWith('audio/') ? 'audio' as const : 'image' as const,
       duration: 0,
-      thumbnail: null,
-      file: file
+      size: file.size,
+      thumbnail: undefined,
+      metadata: undefined
     }))
     
     setMediaFiles(prev => [...prev, ...newMediaFiles])

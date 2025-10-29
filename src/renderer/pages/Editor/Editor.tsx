@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MediaFile, TimelineClip } from '../../types'
 import MediaLibrary from '../../components/MediaLibrary/MediaLibrary'
 import VideoPreview from '../../components/VideoPreview/VideoPreview'
 import Timeline from '../../components/Timeline/Timeline'
@@ -6,31 +7,21 @@ import Toolbar from '../../components/Toolbar/Toolbar'
 import './Editor.css'
 
 function Editor() {
-  const [selectedMedia, setSelectedMedia] = useState(null)
-  const [timelineClips, setTimelineClips] = useState([])
+  const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null)
+  const [timelineClips] = useState<TimelineClip[]>([])
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
 
-  const handleMediaSelect = (media) => {
+  const handleMediaSelect = (media: MediaFile) => {
     setSelectedMedia(media)
   }
 
-  const handleAddToTimeline = (media, position) => {
-    const newClip = {
-      id: Date.now().toString(),
-      media,
-      startTime: position,
-      duration: media.duration || 10, // Default duration
-      track: 0
-    }
-    setTimelineClips(prev => [...prev, newClip])
-  }
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying)
   }
 
-  const handleTimeUpdate = (time) => {
+  const handleTimeUpdate = (time: number) => {
     setCurrentTime(time)
   }
 
@@ -73,7 +64,6 @@ function Editor() {
       <div className="editor-bottom">
         <Timeline 
           clips={timelineClips}
-          onAddClip={handleAddToTimeline}
           currentTime={currentTime}
           onTimeUpdate={handleTimeUpdate}
         />

@@ -1,25 +1,32 @@
-// Media file interface
-export interface MediaFile {
-  id: string
-  name: string
-  type: string
-  size: number
-  duration: number
-  thumbnail: string | null
-  file: File
-  url?: string
+// Import shared types
+import type { 
+  MediaFile, 
+  TimelineClip, 
+  TimelineTrack, 
+  TimelineState,
+  RecordingSource,
+  RecordingSettings,
+  ExportSettings,
+  ExportProgress,
+  ProjectData,
+  AppInfo
+} from '../../shared/types'
+
+// Re-export shared types for convenience
+export type { 
+  MediaFile, 
+  TimelineClip, 
+  TimelineTrack, 
+  TimelineState,
+  RecordingSource,
+  RecordingSettings,
+  ExportSettings,
+  ExportProgress,
+  ProjectData,
+  AppInfo
 }
 
-// Timeline clip interface
-export interface TimelineClip {
-  id: string
-  media: MediaFile
-  startTime: number
-  duration: number
-  track: number
-}
-
-// Component prop interfaces
+// Simple component prop interfaces that work with existing types
 export interface MediaLibraryProps {
   onMediaSelect: (media: MediaFile) => void
   selectedMedia: MediaFile | null
@@ -34,7 +41,6 @@ export interface VideoPreviewProps {
 
 export interface TimelineProps {
   clips: TimelineClip[]
-  onAddClip: (media: MediaFile, position: number) => void
   currentTime: number
   onTimeUpdate: (time: number) => void
 }

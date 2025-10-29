@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState } from 'react'
+import { VideoPreviewProps } from '../../types'
 import './VideoPreview.css'
 
-function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }) {
-  const videoRef = useRef(null)
+function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }: VideoPreviewProps) {
+  const videoRef = useRef<HTMLVideoElement>(null)
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
 
@@ -45,7 +46,7 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }) {
     }
   }, [currentTime])
 
-  const formatTime = (time) => {
+  const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
@@ -69,7 +70,7 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }) {
         {media.type.startsWith('video/') ? (
           <video
             ref={videoRef}
-            src={media.file ? URL.createObjectURL(media.file) : media.url}
+            src={media.path}
             className="preview-video"
             controls={false}
             muted
@@ -83,13 +84,13 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate }) {
             </div>
             <audio
               ref={videoRef}
-              src={media.file ? URL.createObjectURL(media.file) : media.url}
+              src={media.path}
               className="preview-audio"
             />
           </div>
         ) : (
           <img
-            src={media.file ? URL.createObjectURL(media.file) : media.url}
+            src={media.path}
             alt={media.name}
             className="preview-image"
           />

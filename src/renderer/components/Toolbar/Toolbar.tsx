@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { ToolbarProps } from '../../types'
 import './Toolbar.css'
 
-function Toolbar({ isPlaying, onPlayPause, currentTime }) {
+function Toolbar({ isPlaying, onPlayPause, currentTime }: ToolbarProps) {
   const [volume, setVolume] = useState(100)
 
-  const formatTime = (time) => {
+  const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
@@ -65,7 +66,7 @@ function Toolbar({ isPlaying, onPlayPause, currentTime }) {
             min="0"
             max="100"
             value={volume}
-            onChange={(e) => setVolume(e.target.value)}
+            onChange={(e) => setVolume(Number(e.target.value))}
             className="volume-slider"
           />
           <span className="volume-value">{volume}%</span>

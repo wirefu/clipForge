@@ -1,13 +1,12 @@
 import { useState, useRef } from 'react'
+import { TimelineProps } from '../../types'
 import './Timeline.css'
 
-function Timeline({ clips, onAddClip, currentTime, onTimeUpdate }) {
-  const timelineRef = useRef(null)
+function Timeline({ clips, currentTime, onTimeUpdate }: Omit<TimelineProps, 'onAddClip'>) {
+  const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [zoom, setZoom] = useState(1)
-  const [scrollPosition, setScrollPosition] = useState(0)
 
-  const handleTimelineClick = (e) => {
+  const handleTimelineClick = (e: React.MouseEvent) => {
     if (timelineRef.current) {
       const rect = timelineRef.current.getBoundingClientRect()
       const clickX = e.clientX - rect.left
@@ -18,7 +17,7 @@ function Timeline({ clips, onAddClip, currentTime, onTimeUpdate }) {
     }
   }
 
-  const handlePlayheadDrag = (e) => {
+  const handlePlayheadDrag = (e: React.MouseEvent) => {
     if (timelineRef.current) {
       const rect = timelineRef.current.getBoundingClientRect()
       const dragX = e.clientX - rect.left
@@ -29,12 +28,12 @@ function Timeline({ clips, onAddClip, currentTime, onTimeUpdate }) {
     }
   }
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true)
     handlePlayheadDrag(e)
   }
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       handlePlayheadDrag(e)
     }
@@ -44,7 +43,7 @@ function Timeline({ clips, onAddClip, currentTime, onTimeUpdate }) {
     setIsDragging(false)
   }
 
-  const formatTime = (time) => {
+  const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
     const seconds = Math.floor(time % 60)
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
@@ -73,7 +72,7 @@ function Timeline({ clips, onAddClip, currentTime, onTimeUpdate }) {
         <div className="timeline-controls">
           <button className="timeline-btn">+</button>
           <button className="timeline-btn">-</button>
-          <span className="zoom-level">{Math.round(zoom * 100)}%</span>
+          <span className="zoom-level">100%</span>
         </div>
         <div className="timeline-info">
           <span>{formatTime(currentTime)}</span>
@@ -113,12 +112,12 @@ function Timeline({ clips, onAddClip, currentTime, onTimeUpdate }) {
                   key={clip.id}
                   className="timeline-clip"
                   style={{
-                    left: `${clip.startTime}%`,
+                    left: `${clip.start}%`,
                     width: `${clip.duration}%`
                   }}
                 >
                   <div className="clip-content">
-                    <span className="clip-name">{clip.media.name}</span>
+                    <span className="clip-name">Clip {clip.id.slice(-4)}</span>
                   </div>
                 </div>
               ))}
