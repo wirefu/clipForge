@@ -50,6 +50,14 @@ function Editor() {
     setSelectedClipId(clipId)
   }
 
+  // Get the selected clip's trim points
+  const selectedClip = timelineClips.find(clip => clip.id === selectedClipId)
+  const trimStart = selectedClip?.trimStart || 0
+  const trimEnd = selectedClip?.trimEnd || selectedMedia?.duration || 0
+  
+  console.log('Editor: Selected clip:', selectedClip)
+  console.log('Editor: Trim points:', { trimStart, trimEnd, selectedClipId })
+
   return (
     <div className="editor">
       <div className="editor-header">
@@ -74,6 +82,8 @@ function Editor() {
             isPlaying={isPlaying}
             currentTime={currentTime}
             onTimeUpdate={handleTimeUpdate}
+            trimStart={trimStart}
+            trimEnd={trimEnd}
           />
         </div>
         
