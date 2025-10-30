@@ -60,7 +60,7 @@ export function registerRecordingHandlers() {
         const progressInterval = setInterval(() => {
           if (recordingService.isCurrentlyRecording()) {
             const duration = recordingService.getRecordingDuration()
-            event.sender.send('recording:progress', {
+            event.sender.send(IPC_CHANNELS.RECORDING.PROGRESS, {
               isRecording: true,
               duration,
               fileSize: 0, // TODO: Calculate actual file size

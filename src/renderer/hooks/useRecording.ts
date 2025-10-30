@@ -16,6 +16,7 @@ import {
   setOutputPath
 } from '../store/slices/recording.slice'
 import { RecordingSource, RecordingSettings } from '../types/recording.types'
+import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
 export const useRecording = () => {
   const dispatch = useDispatch()
@@ -26,6 +27,20 @@ export const useRecording = () => {
     loadScreenSources()
     loadWebcamDevices()
   }, [])
+
+  // Listen for recording progress updates
+  useEffect(() => {
+    const handleProgressUpdate = (progress: any) => {
+      dispatch(updateProgress(progress))
+    }
+
+    // Listen for progress updates from main process
+    window.electronAPI.on(IPC_CHANNELS.RECORDING.PROGRESS, handleProgressUpdate)
+
+    return () => {
+      window.electronAPI.off(IPC_CHANNELS.RECORDING.PROGRESS, handleProgressUpdate)
+    }
+  }, [dispatch])
 
   // Load screen sources
   const loadScreenSources = useCallback(async () => {
