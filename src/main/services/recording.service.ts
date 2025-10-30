@@ -54,7 +54,10 @@ export class RecordingService {
    */
   async startRecording(settings: RecordingSettings): Promise<{ success: boolean; error?: string }> {
     try {
+      console.log('🎬 RecordingService.startRecording called with:', settings)
+      
       if (this.isRecording) {
+        console.log('❌ Recording already in progress')
         return { success: false, error: 'Recording already in progress' }
       }
 
@@ -62,11 +65,11 @@ export class RecordingService {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const filename = `${settings.filename}-${timestamp}.${settings.format}`
       this.outputPath = join(settings.outputPath, filename)
+      console.log('📁 Output path:', this.outputPath)
 
       // Build FFmpeg command for screen recording
       const ffmpegArgs = this.buildFFmpegCommand(settings)
-
-      console.log('Starting recording with FFmpeg args:', ffmpegArgs)
+      console.log('🎬 FFmpeg command:', 'ffmpeg', ffmpegArgs.join(' '))
 
       // Start FFmpeg process
       this.recordingProcess = spawn('ffmpeg', ffmpegArgs, {
@@ -74,22 +77,33 @@ export class RecordingService {
       })
 
       this.recordingProcess.on('error', (error) => {
-        console.error('FFmpeg process error:', error)
+        console.error('❌ FFmpeg process error:', error)
         this.isRecording = false
       })
 
       this.recordingProcess.on('exit', (code) => {
-        console.log('FFmpeg process exited with code:', code)
+        console.log('🏁 FFmpeg process exited with code:', code)
         this.isRecording = false
+      })
+
+      // Add stderr logging to see FFmpeg output
+      this.recordingProcess.stderr?.on('data', (data) => {
+        console.log('🎬 FFmpeg stderr:', data.toString())
+      })
+
+      // Add stdout logging
+      this.recordingProcess.stdout?.on('data', (data) => {
+        console.log('🎬 FFmpeg stdout:', data.toString())
       })
 
       this.isRecording = true
       this.startTime = Date.now()
+      console.log('✅ Recording started successfully')
 
       return { success: true }
 
     } catch (error) {
-      console.error('Error starting recording:', error)
+      console.error('❌ Error starting recording:', error)
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -154,12 +168,17 @@ export class RecordingService {
   private buildFFmpegCommand(settings: RecordingSettings): string[] {
     const args: string[] = []
 
+    console.log('🔧 Building FFmpeg command for:', settings.sourceType)
+
     if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
       args.push('-f', 'avfoundation')
       args.push('-i', '1:0')
+      console.log('📺 Using screen capture: 1:0')
     } else if (settings.sourceType === 'webcam') {
       args.push('-f', 'avfoundation')
-      args.push('-i', settings.webcamDeviceId || '0')
+      const deviceId = settings.webcamDeviceId || '0'
+      args.push('-i', deviceId)
+      console.log('📹 Using webcam device:', deviceId)
     }
 
     args.push(
@@ -170,13 +189,16 @@ export class RecordingService {
 
     if (settings.audioEnabled) {
       args.push('-b:a', '128k')
+      console.log('🔊 Audio enabled')
     } else {
       args.push('-an')
+      console.log('🔇 Audio disabled')
     }
 
     args.push('-f', settings.format)
     args.push(this.outputPath!)
 
+    console.log('🎬 Final FFmpeg args:', args)
     return args
   }
 }
