@@ -113,32 +113,22 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         setOutputPath(dir)
       }
 
-      let sourceId = selectedSourceId
-      let sourceType = 'screen' as const
-      let selectedSource = null
-
-      console.log('🔍 Debug recording start:')
-      console.log('  recordingType:', recordingType)
-      console.log('  selectedSourceId:', selectedSourceId)
-      console.log('  selectedWebcamId:', selectedWebcamId)
-      console.log('  webcamDevices:', webcamDevices)
-      console.log('  sources:', sources)
+      let sourceId: string
+      let sourceType: 'screen' | 'webcam'
+      let selectedSource: RecordingSource | null = null
 
       if (recordingType === 'webcam') {
         sourceId = selectedWebcamId
         sourceType = 'webcam'
-        // Find the webcam source from webcamDevices
-        selectedSource = webcamDevices.find(device => device.id === selectedWebcamId)
-        console.log('  Webcam source lookup:', { selectedWebcamId, foundSource: selectedSource })
+        selectedSource = webcamDevices.find(device => device.id === selectedWebcamId) || null
       } else if (recordingType === 'both') {
         sourceId = selectedSourceId
         sourceType = 'screen'
-        selectedSource = sources.find(source => source.id === selectedSourceId)
-        console.log('  Screen source lookup:', { selectedSourceId, foundSource: selectedSource })
+        selectedSource = sources.find(source => source.id === selectedSourceId) || null
       } else {
-        // Screen only
-        selectedSource = sources.find(source => source.id === selectedSourceId)
-        console.log('  Screen only source lookup:', { selectedSourceId, foundSource: selectedSource })
+        sourceId = selectedSourceId
+        sourceType = 'screen'
+        selectedSource = sources.find(source => source.id === selectedSourceId) || null
       }
 
       if (!selectedSource) {
@@ -165,6 +155,13 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         quality: recordingSettings.quality!,
         webcamDeviceId: recordingType === 'webcam' || recordingType === 'both' ? selectedWebcamId : undefined
       }
+
+      console.log('🎬 Starting recording with settings:', {
+        sourceType: fullSettings.sourceType,
+        sourceId: fullSettings.sourceId,
+        recordingType,
+        selectedWebcamId
+      })
 
       await startRecording(fullSettings)
     } catch (err: any) {

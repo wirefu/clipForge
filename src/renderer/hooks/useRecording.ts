@@ -188,13 +188,17 @@ export const useRecording = () => {
     try {
       dispatch(clearRecordingError())
       
-      console.log('🎬 useRecording handleStartRecording called with settings:', settings)
+      console.log('🎬 useRecording handleStartRecording called with settings:', {
+        sourceType: settings.sourceType,
+        sourceId: settings.sourceId,
+        webcamDeviceId: settings.webcamDeviceId
+      })
       
       if (settings.sourceType === 'webcam') {
-        // Handle webcam recording in renderer process using MediaRecorder
+        console.log('🎬 Starting webcam recording with MediaRecorder...')
         await handleWebcamRecording(settings)
       } else {
-        // Handle screen recording in main process using FFmpeg
+        console.log('🎬 Starting screen recording with FFmpeg...')
         const result = await window.electronAPI.recording.startRecording(settings)
         
         if (result.success) {
