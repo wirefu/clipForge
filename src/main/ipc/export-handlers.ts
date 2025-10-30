@@ -48,7 +48,17 @@ function convertToExportTimeline(clips: TimelineClip[], mediaFiles: any[]): Expo
   }
 }
 
+let exportHandlersRegistered = false
+
 export function registerExportHandlers() {
+  if (exportHandlersRegistered) {
+    console.log('Export handlers already registered, skipping...')
+    return
+  }
+  
+  exportHandlersRegistered = true
+  console.log('Registering export handlers...')
+  
   // Start export process
   ipcMain.handle(IPC_CHANNELS.EXPORT.START_EXPORT, async (event, { settings, clips, mediaFiles }: {
     settings: ExportSettings

@@ -5,7 +5,17 @@ import { recordingService } from '../services/recording.service'
 import { RecordingSettings } from '../../shared/types/recording.types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
+let recordingHandlersRegistered = false
+
 export function registerRecordingHandlers() {
+  if (recordingHandlersRegistered) {
+    console.log('Recording handlers already registered, skipping...')
+    return
+  }
+  
+  recordingHandlersRegistered = true
+  console.log('Registering recording handlers...')
+  
   // Get screen and window sources
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES, async () => {
     try {
