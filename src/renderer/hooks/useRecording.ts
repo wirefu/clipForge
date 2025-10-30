@@ -112,32 +112,23 @@ export const useRecording = () => {
       
       console.log('🎬 useRecording handleStartRecording called with settings:', settings)
       
-      const result = await window.electronAPI.recording.startRecording(settings)
-      
-      if (result.success) {
-        // Find the source from the appropriate array based on source type
-        let source = null
-        if (settings.sourceType === 'webcam') {
-          source = recordingState.webcamDevices.find(s => s.id === settings.sourceId)
-          console.log('🎬 Looking for webcam source:', { sourceId: settings.sourceId, foundSource: source })
-        } else {
-          source = recordingState.sources.find(s => s.id === settings.sourceId)
-          console.log('🎬 Looking for screen source:', { sourceId: settings.sourceId, foundSource: source })
-        }
-        
-        if (source) {
-          dispatch(startRecording({ source, settings }))
-        } else {
-          console.error('❌ Source not found in useRecording hook:', {
-            sourceType: settings.sourceType,
-            sourceId: settings.sourceId,
-            availableSources: recordingState.sources.map(s => ({ id: s.id, name: s.name })),
-            availableWebcams: recordingState.webcamDevices.map(s => ({ id: s.id, name: s.name }))
-          })
-          dispatch(setRecordingError('Selected source not found'))
-        }
+      if (settings.sourceType === 'webcam') {
+        // Handle webcam recording in renderer process using MediaRecorder
+        await handleWebcamRecording(settings)
       } else {
-        dispatch(setRecordingError(result.error || 'Failed to start recording'))
+        // Handle screen recording in main process using FFmpeg
+        const result = await window.electronAPI.recording.startRecording(settings)
+        
+        if (result.success) {
+          const source = recordingState.sources.find(s => s.id === settings.sourceId)
+          if (source) {
+            dispatch(startRecording({ source, settings }))
+          } else {
+            dispatch(setRecordingError('Selected source not found'))
+          }
+        } else {
+          dispatch(setRecordingError(result.error || 'Failed to start recording'))
+        }
       }
     } catch (error) {
       console.error('Error starting recording:', error)
@@ -145,24 +136,113 @@ export const useRecording = () => {
     }
   }, [dispatch, recordingState.sources, recordingState.webcamDevices])
 
+  // Handle webcam recording using MediaRecorder
+  const handleWebcamRecording = useCallback(async (settings: RecordingSettings) => {
+    try {
+      console.log('🎬 Starting webcam recording with MediaRecorder...')
+      
+      // Find the webcam source
+      const source = recordingState.webcamDevices.find(s => s.id === settings.sourceId)
+      if (!source) {
+        dispatch(setRecordingError('Selected webcam not found'))
+        return
+      }
+      
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          deviceId: { exact: source.deviceId || source.id },
+          width: { ideal: settings.resolution.width },
+          height: { ideal: settings.resolution.height },
+          frameRate: { ideal: settings.framerate }
+        },
+        audio: settings.audioEnabled
+      })
+      
+      console.log('🎬 Got webcam stream:', stream)
+      
+      // Create MediaRecorder
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: settings.bitrate * 1000
+      })
+      
+      // Generate output path
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `${settings.filename}-${timestamp}.webm`
+      const outputPath = `${settings.outputPath}/${filename}`
+      
+      console.log('🎬 Recording to:', outputPath)
+      
+      // Store recording state
+      dispatch(startRecording({ source, settings }))
+      
+      // Start recording
+      const chunks: Blob[] = []
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
+      }
+      
+      mediaRecorder.onstop = () => {
+        console.log('🎬 Webcam recording stopped')
+        const blob = new Blob(chunks, { type: 'video/webm' })
+        
+        // Save the file
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop())
+        
+        dispatch(stopRecording())
+      }
+      
+      mediaRecorder.start()
+      
+      // Store MediaRecorder for stopping
+      ;(window as any).currentMediaRecorder = mediaRecorder
+      
+    } catch (error) {
+      console.error('Error starting webcam recording:', error)
+      dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to start webcam recording'))
+    }
+  }, [dispatch, recordingState.webcamDevices])
+
   // Stop recording
   const handleStopRecording = useCallback(async () => {
     try {
-      const result = await window.electronAPI.recording.stopRecording()
-      
-      if (result.success) {
-        dispatch(stopRecording())
-        if (result.outputPath) {
-          dispatch(setOutputPath(result.outputPath))
+      if (recordingState.isRecording) {
+        if (recordingState.sourceType === 'webcam') {
+          // Stop webcam recording
+          const mediaRecorder = (window as any).currentMediaRecorder
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop()
+          }
+        } else {
+          // Stop screen recording
+          const result = await window.electronAPI.recording.stopRecording()
+          
+          if (result.success) {
+            dispatch(stopRecording())
+            if (result.outputPath) {
+              dispatch(setOutputPath(result.outputPath))
+            }
+          } else {
+            dispatch(setRecordingError(result.error || 'Failed to stop recording'))
+          }
         }
-      } else {
-        dispatch(setRecordingError(result.error || 'Failed to stop recording'))
       }
     } catch (error) {
       console.error('Error stopping recording:', error)
       dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to stop recording'))
     }
-  }, [dispatch])
+  }, [dispatch, recordingState.isRecording, recordingState.sourceType])
 
   // Pause recording
   const handlePauseRecording = useCallback(() => {

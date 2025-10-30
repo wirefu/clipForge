@@ -286,13 +286,10 @@ export class RecordingService {
       args.push('-i', '1:0')
       console.log('📺 Using screen capture: 1:0')
     } else if (settings.sourceType === 'webcam') {
-      args.push('-f', 'avfoundation')
-      // For webcam recording, we need to use the correct device index
-      // FFmpeg avfoundation uses: [video_device_index]:[audio_device_index]
-      // We need to find the webcam device index dynamically
-      const deviceIndex = await this.getWebcamDeviceIndex(settings.webcamDeviceId)
-      args.push('-i', deviceIndex)
-      console.log('📹 Using webcam device index:', deviceIndex)
+      // Webcam recording is handled in the renderer process using MediaRecorder
+      // This is a placeholder - actual webcam recording uses MediaRecorder API
+      console.log('📹 Webcam recording handled in renderer process with MediaRecorder')
+      return []
     }
 
     // For webcam recording, use supported resolution and frame rate
