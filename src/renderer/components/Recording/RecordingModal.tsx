@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { RecordingSource, RecordingSettings } from '../../types/recording.types'
 import { SourceSelector } from './SourceSelector'
 import { RecordingControls } from './RecordingControls'
-import { WebcamPreview } from './WebcamPreview'
 import { useRecording } from '../../hooks/useRecording'
 import './RecordingModal.css'
 
@@ -305,12 +304,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                     <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                       Found {webcamDevices.length} webcam device(s)
                     </div>
-                    {selectedWebcamId && (
-                      <WebcamPreview
-                        deviceId={selectedWebcamId}
-                        isActive={true}
-                      />
-                    )}
                   </div>
                 </div>
               )}

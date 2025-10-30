@@ -27,11 +27,13 @@ export function registerRecordingHandlers() {
     }
   })
 
-  // Get webcam devices - now handled in renderer process
+  // Get webcam devices - now using desktopCapturer
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES, async () => {
     try {
-      console.log('Webcam devices now handled in renderer process')
-      return []
+      console.log('Getting webcam devices using desktopCapturer...')
+      const webcamDevices = await recordingService.getWebcamDevices()
+      console.log('Found webcam devices:', webcamDevices.length)
+      return webcamDevices
     } catch (error) {
       console.error('Error getting webcam devices:', error)
       return []

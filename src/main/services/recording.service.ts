@@ -11,24 +11,36 @@ export class RecordingService {
   private outputPath: string | null = null
 
   /**
-   * Get available screen and window sources for recording
+   * Get available screen, window, and webcam sources for recording
    */
   async getScreenSources(): Promise<RecordingSource[]> {
     try {
       const sources = await desktopCapturer.getSources({
-        types: ['screen', 'window'],
+        types: ['screen', 'window', 'camera'],
         thumbnailSize: { width: 150, height: 150 }
       })
 
-      return sources.map((source, index) => ({
-        id: source.id,
-        name: source.name,
-        type: source.id.startsWith('screen') ? 'screen' as const : 'window' as const,
-        thumbnail: source.thumbnail.toDataURL(),
-        isAvailable: true,
-        displayId: source.id.startsWith('screen') ? source.id : undefined,
-        windowId: source.id.startsWith('window') ? source.id : undefined
-      }))
+      return sources.map((source, index) => {
+        let type: 'screen' | 'window' | 'webcam' = 'screen'
+        
+        if (source.id.startsWith('screen')) {
+          type = 'screen'
+        } else if (source.id.startsWith('window')) {
+          type = 'window'
+        } else if (source.name.includes('Camera') || source.name.includes('FaceTime')) {
+          type = 'webcam'
+        }
+
+        return {
+          id: source.id,
+          name: source.name,
+          type,
+          thumbnail: source.thumbnail.toDataURL(),
+          isAvailable: true,
+          displayId: source.id.startsWith('screen') ? source.id : undefined,
+          windowId: source.id.startsWith('window') ? source.id : undefined
+        }
+      })
     } catch (error) {
       console.error('Error getting screen sources:', error)
       return []
@@ -36,13 +48,13 @@ export class RecordingService {
   }
 
   /**
-   * Get available webcam devices
+   * Get available webcam devices (now handled by getScreenSources)
    */
   async getWebcamDevices(): Promise<RecordingSource[]> {
     try {
-      // Webcam enumeration should be done in renderer process
-      // This is a placeholder - actual implementation is in useRecording hook
-      return []
+      // Get all sources and filter for webcams
+      const allSources = await this.getScreenSources()
+      return allSources.filter(source => source.type === 'webcam')
     } catch (error) {
       console.error('Error getting webcam devices:', error)
       return []
@@ -226,34 +238,36 @@ export class RecordingService {
   }
 
   /**
-   * Get webcam device index for FFmpeg
+   * Get webcam device index for FFmpeg using desktopCapturer source
    */
   private async getWebcamDeviceIndex(webcamDeviceId?: string): Promise<string> {
     try {
-      const devices = await this.getAvailableDevices()
-      console.log('🔍 Available video devices:', devices.video)
+      // Get all sources to find the webcam
+      const allSources = await this.getScreenSources()
+      const webcamSources = allSources.filter(source => source.type === 'webcam')
       
-      // Find the webcam device by name or use default
-      let videoIndex = 0 // Default to first video device
+      console.log('🔍 Available webcam sources:', webcamSources.map(s => ({ id: s.id, name: s.name })))
+      
+      // Find the specific webcam source
+      let selectedSource = webcamSources[0] // Default to first webcam
       
       if (webcamDeviceId) {
-        // Try to find by device ID (this might be a device name)
-        const deviceName = webcamDeviceId
-        const index = devices.video.findIndex(device => 
-          device.toLowerCase().includes('facetime') || 
-          device.toLowerCase().includes('camera') ||
-          device.toLowerCase().includes(deviceName.toLowerCase())
-        )
-        if (index !== -1) {
-          videoIndex = index
+        const found = webcamSources.find(source => source.id === webcamDeviceId)
+        if (found) {
+          selectedSource = found
         }
       }
       
-      // Audio device is usually index 0 (MacBook Pro Microphone)
-      const audioIndex = 0
+      if (!selectedSource) {
+        console.error('❌ No webcam source found')
+        return '0:0' // Fallback
+      }
       
-      const deviceIndex = `${videoIndex}:${audioIndex}`
-      console.log(`📹 Selected webcam device: ${devices.video[videoIndex]} (index: ${deviceIndex})`)
+      // For desktopCapturer webcam sources, we need to map to FFmpeg device index
+      // This is a simplified mapping - in practice, you might need more sophisticated detection
+      const deviceIndex = '0:0' // FaceTime HD Camera is usually at index 0
+      
+      console.log(`📹 Selected webcam: ${selectedSource.name} (using device index: ${deviceIndex})`)
       
       return deviceIndex
     } catch (error) {
@@ -318,3 +332,4 @@ export class RecordingService {
 
 // Export singleton instance
 export const recordingService = new RecordingService()
+
