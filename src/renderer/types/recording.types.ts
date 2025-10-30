@@ -40,6 +40,7 @@ export interface RecordingState {
   error: string | null
   sources: RecordingSource[]
   webcamDevices: RecordingSource[]
+  selectedSourceId: string | null
 }
 
 export interface RecordingProgress {

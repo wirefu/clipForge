@@ -4,6 +4,7 @@ import { RootState } from '../store'
 import {
   setSources,
   setWebcamDevices,
+  setSelectedSource,
   startRecording,
   stopRecording,
   pauseRecording,
@@ -116,6 +117,7 @@ export const useRecording = () => {
     ...recordingState,
     
     // Actions
+    setSelectedSource: (sourceId: string) => dispatch(setSelectedSource(sourceId)),
     startRecording: handleStartRecording,
     stopRecording: handleStopRecording,
     pauseRecording: handlePauseRecording,
@@ -123,6 +125,19 @@ export const useRecording = () => {
     updateSettings: handleUpdateSettings,
     clearError: handleClearError,
     refreshSources: handleRefreshSources,
+    selectRecordingOutputDir: async () => {
+      try {
+        const result = await window.electronAPI.recording.selectOutputDir()
+        if (result.success && result.outputPath) {
+          return result.outputPath
+        }
+        return undefined
+      } catch (err: any) {
+        console.error('Error selecting recording output directory:', err)
+        dispatch(setRecordingError(`Error selecting output directory: ${err.message}`))
+        return undefined
+      }
+    },
     
     // Computed values
     canStartRecording: !recordingState.isRecording && recordingState.sources.length > 0,
