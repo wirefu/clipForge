@@ -236,7 +236,7 @@ export class RecordingService {
   }
 
   /**
-   * Get webcam device index for FFmpeg using device ID mapping
+   * Get webcam device index for FFmpeg
    */
   private async getWebcamDeviceIndex(webcamDeviceId?: string): Promise<string> {
     try {
@@ -246,21 +246,18 @@ export class RecordingService {
       const devices = await this.getFFmpegDevices()
       console.log('🔍 Available FFmpeg video devices:', devices.video)
       
-      // Map webcam device ID to FFmpeg device index
-      // For now, use a simple mapping - FaceTime HD Camera is usually at index 0
+      // For webcam recording, we'll use the first available video device
+      // This is a simplified approach - in practice, you might need more sophisticated detection
       let videoIndex = 0
       
-      if (webcamDeviceId) {
-        // Try to find the device by name in FFmpeg device list
-        const deviceName = webcamDeviceId
-        const index = devices.video.findIndex(device => 
-          device.toLowerCase().includes('facetime') || 
-          device.toLowerCase().includes('camera') ||
-          device.toLowerCase().includes(deviceName.toLowerCase())
-        )
-        if (index !== -1) {
-          videoIndex = index
-        }
+      // Find FaceTime HD Camera or first camera device
+      const facetimeIndex = devices.video.findIndex(device => 
+        device.toLowerCase().includes('facetime') || 
+        device.toLowerCase().includes('camera')
+      )
+      
+      if (facetimeIndex !== -1) {
+        videoIndex = facetimeIndex
       }
       
       // Audio device is usually index 0 (MacBook Pro Microphone)
