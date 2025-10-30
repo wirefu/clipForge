@@ -29,18 +29,18 @@ export const useRecording = () => {
   }, [])
 
   // Listen for recording progress updates
-  useEffect(() => {
-    const handleProgressUpdate = (progress: any) => {
-      dispatch(updateProgress(progress))
-    }
+  const handleProgressUpdate = useCallback((progress: any) => {
+    dispatch(updateProgress(progress))
+  }, [dispatch])
 
+  useEffect(() => {
     // Listen for progress updates from main process
     window.electronAPI.on(IPC_CHANNELS.RECORDING.PROGRESS, handleProgressUpdate)
 
     return () => {
       window.electronAPI.off(IPC_CHANNELS.RECORDING.PROGRESS, handleProgressUpdate)
     }
-  }, [dispatch])
+  }, [handleProgressUpdate])
 
   // Load screen sources
   const loadScreenSources = useCallback(async () => {

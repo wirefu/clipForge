@@ -21,9 +21,10 @@ export const RecordingControls: React.FC<RecordingControlsProps> = ({
   const [displayDuration, setDisplayDuration] = useState('00:00')
 
   useEffect(() => {
-    const formatDuration = (seconds: number): string => {
-      const mins = Math.floor(seconds / 60)
-      const secs = seconds % 60
+    const formatDuration = (milliseconds: number): string => {
+      const totalSeconds = Math.floor(milliseconds / 1000)
+      const mins = Math.floor(totalSeconds / 60)
+      const secs = totalSeconds % 60
       return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     }
 
