@@ -10,11 +10,12 @@ import {
 
 // Import the new file handlers
 import './file-handlers'
-import './export-handlers'
+import { registerExportHandlers } from './export-handlers'
 
 export function setupIpcHandlers(): void {
   // File operations are now handled in file-handlers.ts
   // Export operations are now handled in export-handlers.ts
+  registerExportHandlers()
 
   // Recording operations (placeholders)
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES, async () => {

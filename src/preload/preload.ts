@@ -75,8 +75,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Export operations
   export: {
-    startExport: (settings: ExportSettings): Promise<boolean> => 
-      ipcRenderer.invoke(IPC_CHANNELS.EXPORT.START_EXPORT, settings),
+    startExport: (data: { settings: ExportSettings; clips: any[]; mediaFiles: any[] }): Promise<{ success: boolean; jobId?: string; error?: string }> => 
+      ipcRenderer.invoke(IPC_CHANNELS.EXPORT.START_EXPORT, data),
     
     getProgress: (): Promise<ExportProgress> => 
       ipcRenderer.invoke(IPC_CHANNELS.EXPORT.GET_EXPORT_PROGRESS),
@@ -180,7 +180,7 @@ declare global {
         getState: () => Promise<TimelineState>
       }
       export: {
-        startExport: (settings: ExportSettings) => Promise<boolean>
+        startExport: (data: { settings: ExportSettings; clips: any[]; mediaFiles: any[] }) => Promise<{ success: boolean; jobId?: string; error?: string }>
         getProgress: () => Promise<ExportProgress>
         cancelExport: () => Promise<void>
         getStatus: () => Promise<ExportProgress>

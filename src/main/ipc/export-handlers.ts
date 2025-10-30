@@ -4,6 +4,7 @@ import { homedir } from 'os'
 import { ffmpegService, FFmpegProgress } from '../services/ffmpeg.service'
 import { ExportSettings, ExportTimeline, ExportClip } from '../../shared/types/export.types'
 import { TimelineClip } from '../../shared/types'
+import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
 // Convert TimelineClip to ExportClip
 function convertToExportClip(clip: TimelineClip, mediaPath: string): ExportClip {
@@ -49,7 +50,7 @@ function convertToExportTimeline(clips: TimelineClip[], mediaFiles: any[]): Expo
 
 export function registerExportHandlers() {
   // Start export process
-  ipcMain.handle('export:start', async (event, { settings, clips, mediaFiles }: {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.START_EXPORT, async (event, { settings, clips, mediaFiles }: {
     settings: ExportSettings
     clips: TimelineClip[]
     mediaFiles: any[]
@@ -124,7 +125,7 @@ export function registerExportHandlers() {
   })
 
   // Cancel export process
-  ipcMain.handle('export:cancel', async (event, { jobId }: { jobId: string }) => {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.CANCEL_EXPORT, async (event, { jobId }: { jobId: string }) => {
     try {
       console.log('Cancelling export process:', jobId)
       
@@ -142,7 +143,7 @@ export function registerExportHandlers() {
   })
 
   // Get export status
-  ipcMain.handle('export:status', async () => {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.GET_EXPORT_STATUS, async () => {
     try {
       const isRunning = ffmpegService.isExportRunning()
       return { isRunning }
@@ -157,7 +158,7 @@ export function registerExportHandlers() {
   })
 
   // Select output directory
-  ipcMain.handle('export:select-output-dir', async () => {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_DIR, async () => {
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openDirectory'],
@@ -182,7 +183,7 @@ export function registerExportHandlers() {
   })
 
   // Select output file
-  ipcMain.handle('export:select-output-file', async (event, { defaultFilename }: { defaultFilename: string }) => {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_FILE, async (event, { defaultFilename }: { defaultFilename: string }) => {
     try {
       const result = await dialog.showSaveDialog({
         title: 'Save Export As',
@@ -213,7 +214,7 @@ export function registerExportHandlers() {
   })
 
   // Get export presets
-  ipcMain.handle('export:get-presets', async () => {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.GET_PRESETS, async () => {
     try {
       // In a real app, these would be loaded from a file or database
       const presets = [
@@ -327,7 +328,7 @@ export function registerExportHandlers() {
   })
 
   // Validate export settings
-  ipcMain.handle('export:validate-settings', async (event, { settings }: { settings: ExportSettings }) => {
+  ipcMain.handle(IPC_CHANNELS.EXPORT.VALIDATE_SETTINGS, async (event, { settings }: { settings: ExportSettings }) => {
     try {
       const errors: string[] = []
       

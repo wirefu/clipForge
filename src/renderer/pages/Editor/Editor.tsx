@@ -67,6 +67,7 @@ function Editor() {
     setTimelineClips(prev => {
       const newClips = [...prev, clip]
       console.log('Editor: Updated clips array:', newClips)
+      console.log('Editor: New clips length:', newClips.length)
       return newClips
     })
   }
@@ -98,7 +99,7 @@ function Editor() {
       dispatch(startExport({ settings, jobId }))
       
       // Start export process
-      const result = await window.electronAPI.invoke('export:start', {
+      const result = await window.electronAPI.export.startExport({
         settings,
         clips: timelineClips,
         mediaFiles
@@ -154,11 +155,7 @@ function Editor() {
                 console.log('Setting showExportModal to true')
                 setShowExportModal(true)
               }}
-              canExport={(() => {
-                console.log('Editor: Checking canExport, timelineClips.length:', timelineClips.length)
-                console.log('Editor: timelineClips:', timelineClips)
-                return timelineClips.length > 0
-              })()}
+              canExport={timelineClips.length > 0}
             />
           </div>
       

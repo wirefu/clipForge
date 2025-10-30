@@ -13,6 +13,7 @@ interface TimelineComponentProps extends Omit<TimelineProps, 'onAddClip'> {
 }
 
 function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId, onAddClip, onExport, canExport }: TimelineComponentProps) {
+  console.log('Timeline: Received props:', { clipsLength: clips.length, canExport, onExport: !!onExport })
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
