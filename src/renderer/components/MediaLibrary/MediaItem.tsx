@@ -87,13 +87,13 @@ function MediaItem({
       {/* Thumbnail */}
       <div className="media-thumbnail">
         {media.thumbnail && !imageError ? (
-        <img
-          src={`file://${media.thumbnail}`}
-          alt={media.name}
-          onError={() => setImageError(true)}
+          <img
+            src={`file://${media.thumbnail}`}
+            alt={media.name}
+            onError={() => setImageError(true)}
           onLoad={() => {}}
-          className="thumbnail-image"
-        />
+            className="thumbnail-image"
+          />
         ) : (
           <div className="thumbnail-placeholder">
             <div className="placeholder-icon">

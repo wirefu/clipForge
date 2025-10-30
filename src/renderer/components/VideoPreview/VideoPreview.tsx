@@ -74,15 +74,15 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
   }, [media, onTimeUpdate, trimStart, trimEnd, clipStart])
 
   useEffect(() => {
-      if (videoRef.current) {
-        if (isPlaying) {
+    if (videoRef.current) {
+      if (isPlaying) {
           videoRef.current.play().catch((error) => {
             console.error('Error playing video:', error)
           })
-        } else {
-          videoRef.current.pause()
-        }
+      } else {
+        videoRef.current.pause()
       }
+    }
   }, [isPlaying])
 
   useEffect(() => {
@@ -162,9 +162,9 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       </div>
       
       <div className="preview-controls">
-          <div className="time-display">
+        <div className="time-display">
             {formatTime(currentTime)} / {formatTime(trimmedDuration)}
-          </div>
+        </div>
         <div className="progress-bar">
           <div 
             className="progress-fill"
@@ -176,9 +176,9 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       <div className="preview-info">
         <h4>{media.name}</h4>
         <p>{media.type}</p>
-            {isLoaded && (
+        {isLoaded && (
               <p>Duration: {formatTime(trimmedDuration)}</p>
-            )}
+        )}
       </div>
     </div>
   )

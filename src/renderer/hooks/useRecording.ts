@@ -57,6 +57,30 @@ export const useRecording = () => {
     }
   }, [handleProgressUpdate])
 
+  // Cleanup effect for webcam recording timer
+  useEffect(() => {
+    return () => {
+      // Clean up any running timer when component unmounts
+      const timerInterval = (window as any).currentTimerInterval
+      if (timerInterval) {
+        clearInterval(timerInterval)
+        ;(window as any).currentTimerInterval = null
+      }
+    }
+  }, [])
+
+  // Cleanup effect when recording stops
+  useEffect(() => {
+    if (!recordingState.isRecording) {
+      // Clear timer when recording stops
+      const timerInterval = (window as any).currentTimerInterval
+      if (timerInterval) {
+        clearInterval(timerInterval)
+        ;(window as any).currentTimerInterval = null
+      }
+    }
+  }, [recordingState.isRecording])
+
   // Load screen sources
   const loadScreenSources = useCallback(async () => {
     try {
@@ -185,7 +209,9 @@ export const useRecording = () => {
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop())
         
-        dispatch(stopRecording())
+        // Clear the global references
+        ;(window as any).currentMediaRecorder = null
+        ;(window as any).currentTimerInterval = null
       }
       
       mediaRecorder.start(1000) // Request data every 1 second
@@ -255,17 +281,22 @@ export const useRecording = () => {
           const mediaRecorder = (window as any).currentMediaRecorder
           const timerInterval = (window as any).currentTimerInterval
           
-          if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop()
-          }
-          
+          // Clear timer first to stop duration updates
           if (timerInterval) {
             clearInterval(timerInterval)
             ;(window as any).currentTimerInterval = null
           }
           
+          // Stop MediaRecorder
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop()
+          }
+          
           // Notify main process that webcam recording stopped
           await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
+          
+          // Dispatch stop recording to update Redux state
+          dispatch(stopRecording())
         } else {
           // Stop screen recording
           const result = await window.electronAPI.recording.stopRecording()
