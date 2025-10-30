@@ -29,9 +29,17 @@ export const useRecording = () => {
   }, [])
 
   // Listen for recording progress updates
-  const handleProgressUpdate = useCallback((progress: any) => {
-    console.log('🎬 Progress update received:', progress)
-    dispatch(updateProgress(progress))
+  const handleProgressUpdate = useCallback((event: any, progress: any) => {
+    console.log('🎬 Progress update received - event:', event)
+    console.log('🎬 Progress update received - progress:', progress)
+    console.log('🎬 Progress update received - typeof progress:', typeof progress)
+    
+    // Extract the actual progress data from the IPC event
+    const progressData = progress || event
+    console.log('🎬 Using progressData:', progressData)
+    console.log('🎬 progressData.duration:', progressData?.duration)
+    
+    dispatch(updateProgress(progressData))
   }, [dispatch])
 
   useEffect(() => {
