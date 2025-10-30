@@ -116,13 +116,25 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
 
       let sourceId = selectedSourceId
       let sourceType = 'screen' as const
+      let selectedSource = null
 
       if (recordingType === 'webcam') {
         sourceId = selectedWebcamId
         sourceType = 'webcam'
+        // Find the webcam source from webcamDevices
+        selectedSource = webcamDevices.find(device => device.id === selectedWebcamId)
       } else if (recordingType === 'both') {
         sourceId = selectedSourceId
         sourceType = 'screen'
+        selectedSource = sources.find(source => source.id === selectedSourceId)
+      } else {
+        // Screen only
+        selectedSource = sources.find(source => source.id === selectedSourceId)
+      }
+
+      if (!selectedSource) {
+        alert('Selected source not found. Please refresh and try again.')
+        return
       }
 
       const fullSettings: RecordingSettings = {

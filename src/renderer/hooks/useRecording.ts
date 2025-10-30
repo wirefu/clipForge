@@ -44,10 +44,16 @@ export const useRecording = () => {
 
   useEffect(() => {
     // Listen for progress updates from main process
-    window.electronAPI.on(IPC_CHANNELS.RECORDING.PROGRESS, handleProgressUpdate)
+    const channel = IPC_CHANNELS.RECORDING.PROGRESS
+    
+    // Remove any existing listeners first
+    window.electronAPI.off(channel, handleProgressUpdate)
+    
+    // Add the listener
+    window.electronAPI.on(channel, handleProgressUpdate)
 
     return () => {
-      window.electronAPI.off(IPC_CHANNELS.RECORDING.PROGRESS, handleProgressUpdate)
+      window.electronAPI.off(channel, handleProgressUpdate)
     }
   }, [handleProgressUpdate])
 
