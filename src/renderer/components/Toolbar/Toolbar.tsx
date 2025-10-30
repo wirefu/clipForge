@@ -11,6 +11,7 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
   const [volume, setVolume] = useState(100)
   
   console.log('Toolbar rendered with canExport:', canExport, 'onExport:', !!onExport)
+  console.log('Toolbar props:', { isPlaying, onPlayPause, currentTime, onExport, canExport })
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
@@ -108,6 +109,17 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
         >
           📤 {canExport ? '✓' : '✗'}
         </button>
+        <div style={{ 
+          position: 'absolute', 
+          top: '50px', 
+          right: '10px', 
+          background: 'red', 
+          color: 'white', 
+          padding: '5px',
+          zIndex: 10000
+        }}>
+          DEBUG: canExport={canExport ? 'true' : 'false'}
+        </div>
       </div>
     </div>
   )
