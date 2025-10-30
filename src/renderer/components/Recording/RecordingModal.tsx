@@ -60,8 +60,15 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   }
 
   const handleStartRecording = async () => {
-    if (!selectedSource) {
+    if (!selectedSourceId) {
       alert('Please select a recording source first')
+      return
+    }
+
+    // Find the selected source from the sources array
+    const selectedSource = sources.find(source => source.id === selectedSourceId)
+    if (!selectedSource) {
+      alert('Selected source not found. Please refresh and try again.')
       return
     }
 
@@ -270,7 +277,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
             <div className="recording-in-progress">
               <div className="recording-status">
                 <h3>🎬 Recording in Progress</h3>
-                <p>Recording: {selectedSource?.name}</p>
+                <p>Recording: {sources.find(s => s.id === selectedSourceId)?.name || 'Unknown'}</p>
                 <p>Resolution: {recordingSettings.resolution?.width}x{recordingSettings.resolution?.height}</p>
                 <p>Frame Rate: {recordingSettings.framerate} fps</p>
                 {recordingSettings.audioEnabled && <p>Audio: Enabled</p>}
