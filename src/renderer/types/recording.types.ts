@@ -23,6 +23,7 @@ export interface RecordingSettings {
   bitrate: number
   audioEnabled: boolean
   audioSource?: string // Microphone device ID
+  webcamDeviceId?: string // Webcam device ID for webcam recording
   outputPath: string
   filename: string
   format: 'mp4' | 'mov' | 'avi'

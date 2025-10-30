@@ -40,17 +40,16 @@ export class RecordingService {
    */
   async getWebcamDevices(): Promise<RecordingSource[]> {
     try {
-      // In a real implementation, this would use getUserMedia or similar
-      // For now, return mock data
-      return [
-        {
-          id: 'webcam-default',
-          name: 'Default Webcam',
-          type: 'webcam',
-          isAvailable: true,
-          deviceId: 'default'
-        }
-      ]
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter(device => device.kind === 'videoinput')
+      
+      return videoDevices.map((device, index) => ({
+        id: device.deviceId || `webcam-${index}`,
+        name: device.label || `Webcam ${index + 1}`,
+        type: 'webcam' as const,
+        isAvailable: true,
+        deviceId: device.deviceId
+      }))
     } catch (error) {
       console.error('Error getting webcam devices:', error)
       return []
@@ -162,33 +161,27 @@ export class RecordingService {
   private buildFFmpegCommand(settings: RecordingSettings): string[] {
     const args: string[] = []
 
-    // For macOS screen recording, use a different approach
     if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
-      // Try using the system's screen capture
-      // First, let's try a simple approach that works on macOS
       args.push('-f', 'avfoundation')
-      args.push('-i', '1:0') // Use default screen and audio
+      args.push('-i', '1:0')
     } else if (settings.sourceType === 'webcam') {
-      args.push('-f', 'avfoundation', '-i', settings.sourceId)
+      args.push('-f', 'avfoundation')
+      args.push('-i', settings.webcamDeviceId || '0')
     }
 
-    // Video settings - minimal for testing
     args.push(
       '-r', settings.framerate.toString(),
-      '-b:v', `${settings.bitrate}k`
+      '-b:v', `${settings.bitrate}k`,
+      '-pix_fmt', 'yuv420p'
     )
 
-    // Audio settings
     if (settings.audioEnabled) {
       args.push('-b:a', '128k')
     } else {
       args.push('-an')
     }
 
-    // Output format
     args.push('-f', settings.format)
-
-    // Output file
     args.push(this.outputPath!)
 
     return args

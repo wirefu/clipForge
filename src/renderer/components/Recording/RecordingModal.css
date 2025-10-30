@@ -173,6 +173,60 @@
   font-size: 14px;
 }
 
+.recording-type-selector {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.recording-type-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.recording-type-option:hover {
+  background: #333;
+}
+
+.recording-type-option input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #007acc;
+}
+
+.recording-type-option span {
+  color: #ccc;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.webcam-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.webcam-select {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.webcam-select:focus {
+  outline: none;
+  border-color: #007acc;
+  box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.2);
+}
+
 .recording-actions {
   display: flex;
   gap: 12px;
