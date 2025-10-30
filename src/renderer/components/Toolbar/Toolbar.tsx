@@ -11,8 +11,6 @@ interface ExtendedToolbarProps extends ToolbarProps {
 function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = false, onRecord }: ExtendedToolbarProps) {
   const [volume, setVolume] = useState(100)
   
-  console.log('Toolbar rendered with canExport:', canExport, 'onExport:', !!onExport)
-  console.log('Toolbar props:', { isPlaying, onPlayPause, currentTime, onExport, canExport })
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60)
@@ -90,15 +88,7 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
         </div>
         <button 
           className={`toolbar-btn export-btn ${!canExport ? 'disabled' : ''}`}
-          onMouseDown={() => console.log('Export button mouse down!')}
-          onMouseUp={() => console.log('Export button mouse up!')}
-          onMouseEnter={() => console.log('Export button mouse enter!')}
-          onMouseLeave={() => console.log('Export button mouse leave!')}
           onClick={(e) => {
-            console.log('Export button clicked in Toolbar!')
-            console.log('Event:', e)
-            console.log('canExport:', canExport)
-            console.log('onExport function:', onExport)
             e.preventDefault()
             e.stopPropagation()
             if (onExport) {

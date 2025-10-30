@@ -15,7 +15,6 @@ let webcamRecordingStatus = {
 export function registerRecordingHandlers() {
   // Check if handler already exists and remove it first
   if (ipcMain.listenerCount(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES) > 0) {
-    console.log('Recording handlers already registered, removing old handlers...')
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES)
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES)
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.START_RECORDING)
@@ -25,14 +24,11 @@ export function registerRecordingHandlers() {
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_FILE)
   }
   
-  console.log('Registering recording handlers...')
   
   // Get screen and window sources
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES, async () => {
     try {
-      console.log('Getting screen sources...')
       const sources = await recordingService.getScreenSources()
-      console.log('Found screen sources:', sources.length)
       return sources
     } catch (error) {
       console.error('Error getting screen sources:', error)
@@ -43,9 +39,7 @@ export function registerRecordingHandlers() {
   // Get webcam devices - now using desktopCapturer
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES, async () => {
     try {
-      console.log('Getting webcam devices using desktopCapturer...')
       const webcamDevices = await recordingService.getWebcamDevices()
-      console.log('Found webcam devices:', webcamDevices.length)
       return webcamDevices
     } catch (error) {
       console.error('Error getting webcam devices:', error)
@@ -56,7 +50,6 @@ export function registerRecordingHandlers() {
   // Start recording
   ipcMain.handle(IPC_CHANNELS.RECORDING.START_RECORDING, async (event, settings: RecordingSettings) => {
     try {
-      console.log('Starting recording with settings:', settings)
       
       // Validate settings
       if (!settings.sourceId) {
@@ -75,13 +68,11 @@ export function registerRecordingHandlers() {
       const result = await recordingService.startRecording(settings)
       
       if (result.success) {
-        console.log('Recording started successfully')
         
         // Send periodic progress updates
         const progressInterval = setInterval(() => {
           if (recordingService.isCurrentlyRecording()) {
             const duration = recordingService.getRecordingDuration()
-            console.log('🎬 Main process: Sending progress update, duration:', duration)
             event.sender.send(IPC_CHANNELS.RECORDING.PROGRESS, {
               isRecording: true,
               duration,

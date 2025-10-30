@@ -7,7 +7,6 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
   const [duration, setDuration] = useState(0)
   const [isLoaded, setIsLoaded] = useState(false)
 
-  console.log('VideoPreview: Received trim points:', { trimStart, trimEnd, media: media?.name })
 
   // Convert file path to proper URL for Electron
   const getMediaUrl = (media: MediaFile) => {
@@ -43,7 +42,6 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
         // Timeline time in seconds = clip.start (in seconds) + relative video time
         // Since timeline uses percentage where 1% = 1 second, timeline time = clip.start + relativeVideoTime
         const timelineTime = clipStart + relativeVideoTime
-        console.log('VideoPreview time update:', { videoTime, trimStart, clipStart, relativeVideoTime, timelineTime })
         onTimeUpdate(timelineTime)
         
         // If we have a trim end point and we've reached it, pause the video AND stop timeline
@@ -91,7 +89,6 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       // Timeline time = clip.start + (video time - trim start)
       // So: video time = trim start + (timeline time - clip.start)
       const videoTime = Math.max(trimStart, trimStart + (currentTime - clipStart))
-      console.log('VideoPreview seeking to:', { currentTime, clipStart, trimStart, videoTime })
       videoRef.current.currentTime = Math.min(videoTime, trimEnd || videoRef.current.duration)
     }
   }, [currentTime, trimStart, clipStart, trimEnd])

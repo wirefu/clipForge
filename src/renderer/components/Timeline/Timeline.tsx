@@ -13,7 +13,6 @@ interface TimelineComponentProps extends Omit<TimelineProps, 'onAddClip'> {
 }
 
 function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId, onAddClip, onExport, canExport }: TimelineComponentProps) {
-  console.log('Timeline: Received props:', { clipsLength: clips.length, canExport, onExport: !!onExport })
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -90,7 +89,6 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
         muted: false
       }
 
-      console.log('Adding clip to timeline:', newClip)
       onAddClip(newClip)
     } catch (error) {
       console.error('Error adding clip to timeline:', error)
@@ -192,9 +190,6 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
           <button 
             className={`btn btn-primary ${!canExport ? 'disabled' : ''}`}
             onClick={() => {
-              console.log('Timeline Export button clicked!')
-              console.log('canExport:', canExport)
-              console.log('clips.length:', clips.length)
               if (onExport) {
                 onExport()
               } else {

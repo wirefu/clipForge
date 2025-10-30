@@ -25,7 +25,6 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
         localStorage.removeItem('persist:mediaLibrary')
         // This would call the main process to get imported files
         // For now, we'll use the Redux state
-        console.log('Loading imported files...')
       } catch (error) {
         console.error('Failed to load imported files:', error)
       }
@@ -35,7 +34,6 @@ function MediaLibrary({ onMediaSelect, selectedMedia }: MediaLibraryProps) {
   }, [dispatch])
 
   const handleImport = (files: MediaFile[]) => {
-    console.log('Files imported:', files)
     // Files are already added to Redux store by ImportZone
   }
 
