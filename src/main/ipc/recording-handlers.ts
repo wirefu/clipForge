@@ -5,6 +5,13 @@ import { recordingService } from '../services/recording.service'
 import { RecordingSettings } from '../../shared/types/recording.types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
+// Track webcam recording status in main process
+let webcamRecordingStatus = {
+  isRecording: false,
+  startTime: null as number | null,
+  duration: 0
+}
+
 export function registerRecordingHandlers() {
   // Check if handler already exists and remove it first
   if (ipcMain.listenerCount(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES) > 0) {
@@ -135,8 +142,12 @@ export function registerRecordingHandlers() {
   // Get recording status
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_RECORDING_STATUS, async () => {
     try {
-      const isRecording = recordingService.isCurrentlyRecording()
-      const duration = recordingService.getRecordingDuration()
+      const ffmpegRecording = recordingService.isCurrentlyRecording()
+      const ffmpegDuration = recordingService.getRecordingDuration()
+      
+      // Check both FFmpeg and webcam recording status
+      const isRecording = ffmpegRecording || webcamRecordingStatus.isRecording
+      const duration = ffmpegRecording ? ffmpegDuration : webcamRecordingStatus.duration
       
       return {
         isRecording,
@@ -151,6 +162,21 @@ export function registerRecordingHandlers() {
         outputPath: null
       }
     }
+  })
+
+  // Set webcam recording status (called from renderer)
+  ipcMain.handle('recording:set-webcam-status', async (_, { isRecording, duration }) => {
+    webcamRecordingStatus.isRecording = isRecording
+    webcamRecordingStatus.duration = duration || 0
+    
+    if (isRecording && !webcamRecordingStatus.startTime) {
+      webcamRecordingStatus.startTime = Date.now()
+    } else if (!isRecording) {
+      webcamRecordingStatus.startTime = null
+    }
+    
+    console.log('Webcam recording status updated:', webcamRecordingStatus)
+    return { success: true }
   })
 
   // Select recording output directory

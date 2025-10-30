@@ -13,12 +13,22 @@ import './file-handlers'
 import { registerExportHandlers } from './export-handlers'
 import { registerRecordingHandlers } from './recording-handlers'
 
+let handlersRegistered = false
+
 export function setupIpcHandlers(): void {
+  if (handlersRegistered) {
+    console.log('IPC handlers already registered, skipping...')
+    return
+  }
+  
   // File operations are now handled in file-handlers.ts
   // Export operations are now handled in export-handlers.ts
   // Recording operations are now handled in recording-handlers.ts
   registerExportHandlers()
   registerRecordingHandlers()
+  
+  handlersRegistered = true
+  console.log('IPC handlers registered successfully')
 
   // Recording operations are now handled in recording-handlers.ts
 

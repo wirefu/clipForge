@@ -146,6 +146,9 @@ export const useRecording = () => {
       // Store recording state
       dispatch(startRecording({ source, settings }))
       
+      // Notify main process about webcam recording status
+      await window.electronAPI.recording.setWebcamStatus({ isRecording: true, duration: 0 })
+      
       // Start recording
       const chunks: Blob[] = []
       const startTime = Date.now()
@@ -188,9 +191,12 @@ export const useRecording = () => {
       mediaRecorder.start(1000) // Request data every 1 second
       
       // Start timer for webcam recording
-      const timerInterval = setInterval(() => {
+      const timerInterval = setInterval(async () => {
         const elapsed = Date.now() - startTime
         dispatch(updateProgress({ duration: elapsed }))
+        
+        // Update main process with current duration
+        await window.electronAPI.recording.setWebcamStatus({ isRecording: true, duration: elapsed })
       }, 100)
       
       // Store timer interval for cleanup
@@ -257,6 +263,9 @@ export const useRecording = () => {
             clearInterval(timerInterval)
             ;(window as any).currentTimerInterval = null
           }
+          
+          // Notify main process that webcam recording stopped
+          await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
         } else {
           // Stop screen recording
           const result = await window.electronAPI.recording.stopRecording()
