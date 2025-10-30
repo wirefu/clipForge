@@ -133,7 +133,7 @@ export function registerRecordingHandlers() {
   })
 
   // Select recording output directory
-  ipcMain.handle('recording:select-output-dir', async () => {
+  ipcMain.handle(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_DIR, async () => {
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openDirectory'],
@@ -158,7 +158,7 @@ export function registerRecordingHandlers() {
   })
 
   // Select recording output file
-  ipcMain.handle('recording:select-output-file', async (event, { defaultFilename }: { defaultFilename: string }) => {
+  ipcMain.handle(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_FILE, async (event, { defaultFilename }: { defaultFilename: string }) => {
     try {
       const result = await dialog.showSaveDialog({
         title: 'Save Recording As',

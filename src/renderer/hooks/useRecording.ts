@@ -50,14 +50,20 @@ export const useRecording = () => {
   }, [dispatch])
 
   // Start recording
-  const handleStartRecording = useCallback(async (source: RecordingSource, settings: RecordingSettings) => {
+  const handleStartRecording = useCallback(async (settings: RecordingSettings) => {
     try {
       dispatch(clearRecordingError())
       
       const result = await window.electronAPI.recording.startRecording(settings)
       
       if (result.success) {
-        dispatch(startRecording({ source, settings }))
+        // Find the source from the settings
+        const source = recordingState.sources.find(s => s.id === settings.sourceId)
+        if (source) {
+          dispatch(startRecording({ source, settings }))
+        } else {
+          dispatch(setRecordingError('Selected source not found'))
+        }
       } else {
         dispatch(setRecordingError(result.error || 'Failed to start recording'))
       }
@@ -65,7 +71,7 @@ export const useRecording = () => {
       console.error('Error starting recording:', error)
       dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to start recording'))
     }
-  }, [dispatch])
+  }, [dispatch, recordingState.sources])
 
   // Stop recording
   const handleStopRecording = useCallback(async () => {

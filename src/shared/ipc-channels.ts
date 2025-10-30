@@ -17,6 +17,8 @@ export const IPC_CHANNELS = {
     START_RECORDING: 'recording:start',
     STOP_RECORDING: 'recording:stop',
     GET_RECORDING_STATUS: 'recording:status',
+    SELECT_OUTPUT_DIR: 'recording:select-output-dir',
+    SELECT_OUTPUT_FILE: 'recording:select-output-file',
   },
   
   // Timeline operations
