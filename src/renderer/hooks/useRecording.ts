@@ -160,13 +160,24 @@ export const useRecording = () => {
         console.log('🎬 Webcam recording stopped')
         const blob = new Blob(chunks, { type: 'video/webm' })
         
-        // Save the file
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        a.click()
-        URL.revokeObjectURL(url)
+        console.log('🎬 Blob created:', { size: blob.size, type: blob.type })
+        
+        if (blob.size > 0) {
+          // Save the file
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          a.style.display = 'none'
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          
+          console.log('🎬 File saved:', filename)
+        } else {
+          console.error('🎬 No data recorded - blob is empty')
+        }
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop())
@@ -174,7 +185,7 @@ export const useRecording = () => {
         dispatch(stopRecording())
       }
       
-      mediaRecorder.start()
+      mediaRecorder.start(1000) // Request data every 1 second
       
       // Start timer for webcam recording
       const timerInterval = setInterval(() => {

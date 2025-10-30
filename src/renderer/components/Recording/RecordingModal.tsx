@@ -211,7 +211,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     <div className="recording-modal-overlay">
       <div className="recording-modal">
         <div className="recording-modal-header">
-          <h2>Screen Recording</h2>
+          <h2>{recordingType === 'webcam' ? 'Webcam Recording' : 'Screen Recording'}</h2>
           <button className="close-btn" onClick={onClose}>
             ✕
           </button>
