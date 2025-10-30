@@ -162,20 +162,20 @@ export class RecordingService {
   private buildFFmpegCommand(settings: RecordingSettings): string[] {
     const args: string[] = []
 
-    // For macOS screen recording, use a simpler approach
+    // For macOS screen recording, use a different approach
     if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
-      // Use screen capture - try different approaches
+      // Try using the system's screen capture
+      // First, let's try a simple approach that works on macOS
       args.push('-f', 'avfoundation')
-      args.push('-i', settings.sourceId)
+      args.push('-i', '1:0') // Use default screen and audio
     } else if (settings.sourceType === 'webcam') {
       args.push('-f', 'avfoundation', '-i', settings.sourceId)
     }
 
-    // Video settings - simplified for better compatibility
+    // Video settings - minimal for testing
     args.push(
       '-r', settings.framerate.toString(),
-      '-b:v', `${settings.bitrate}k`,
-      '-pix_fmt', 'yuv420p'
+      '-b:v', `${settings.bitrate}k`
     )
 
     // Audio settings

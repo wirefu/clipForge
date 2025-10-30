@@ -48,15 +48,13 @@ function convertToExportTimeline(clips: TimelineClip[], mediaFiles: any[]): Expo
   }
 }
 
-let exportHandlersRegistered = false
-
 export function registerExportHandlers() {
-  if (exportHandlersRegistered) {
+  // Check if handler already exists
+  if (ipcMain.listenerCount(IPC_CHANNELS.EXPORT.START_EXPORT) > 0) {
     console.log('Export handlers already registered, skipping...')
     return
   }
   
-  exportHandlersRegistered = true
   console.log('Registering export handlers...')
   
   // Start export process
