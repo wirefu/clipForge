@@ -56,11 +56,18 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     }
   }, [isOpen])
 
+  // Debug: Monitor selectedSourceId changes
+  useEffect(() => {
+    console.log('🎬 DEBUG: selectedSourceId changed to:', selectedSourceId)
+  }, [selectedSourceId])
+
   const handleSourceSelect = (source: RecordingSource) => {
-    console.log('DEBUG: handleSourceSelect called with:', source)
+    console.log('🎬 DEBUG: handleSourceSelect called with:', source)
+    console.log('🎬 DEBUG: Current selectedSourceId before update:', selectedSourceId)
     setSelectedSourceState(source)
     setSelectedSource(source.id)
-    console.log('DEBUG: After setSelectedSource, selectedSourceId should be:', source.id)
+    console.log('🎬 DEBUG: After setSelectedSource, selectedSourceId should be:', source.id)
+    console.log('🎬 DEBUG: Redux state should update now...')
   }
 
   const handleStartRecording = async () => {
