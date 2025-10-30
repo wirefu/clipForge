@@ -131,7 +131,7 @@ export class RecordingService {
       console.log('📁 Output path:', this.outputPath)
 
       // Build FFmpeg command for screen recording
-      const ffmpegArgs = this.buildFFmpegCommand(settings)
+      const ffmpegArgs = await this.buildFFmpegCommand(settings)
       console.log('🎬 FFmpeg command:', 'ffmpeg', ffmpegArgs.join(' '))
 
       // Start FFmpeg process
@@ -226,9 +226,46 @@ export class RecordingService {
   }
 
   /**
+   * Get webcam device index for FFmpeg
+   */
+  private async getWebcamDeviceIndex(webcamDeviceId?: string): Promise<string> {
+    try {
+      const devices = await this.getAvailableDevices()
+      console.log('🔍 Available video devices:', devices.video)
+      
+      // Find the webcam device by name or use default
+      let videoIndex = 0 // Default to first video device
+      
+      if (webcamDeviceId) {
+        // Try to find by device ID (this might be a device name)
+        const deviceName = webcamDeviceId
+        const index = devices.video.findIndex(device => 
+          device.toLowerCase().includes('facetime') || 
+          device.toLowerCase().includes('camera') ||
+          device.toLowerCase().includes(deviceName.toLowerCase())
+        )
+        if (index !== -1) {
+          videoIndex = index
+        }
+      }
+      
+      // Audio device is usually index 0 (MacBook Pro Microphone)
+      const audioIndex = 0
+      
+      const deviceIndex = `${videoIndex}:${audioIndex}`
+      console.log(`📹 Selected webcam device: ${devices.video[videoIndex]} (index: ${deviceIndex})`)
+      
+      return deviceIndex
+    } catch (error) {
+      console.error('Error getting webcam device index:', error)
+      return '0:0' // Fallback to default
+    }
+  }
+
+  /**
    * Build FFmpeg command for screen recording
    */
-  private buildFFmpegCommand(settings: RecordingSettings): string[] {
+  private async buildFFmpegCommand(settings: RecordingSettings): Promise<string[]> {
     const args: string[] = []
 
     console.log('🔧 Building FFmpeg command for:', settings.sourceType)
@@ -241,9 +278,8 @@ export class RecordingService {
       args.push('-f', 'avfoundation')
       // For webcam recording, we need to use the correct device index
       // FFmpeg avfoundation uses: [video_device_index]:[audio_device_index]
-      // For webcam only recording, we use: [webcam_index]:[audio_index]
-      // Default webcam is usually index 0, audio is usually index 0
-      const deviceIndex = '0:0' // webcam:audio
+      // We need to find the webcam device index dynamically
+      const deviceIndex = await this.getWebcamDeviceIndex(settings.webcamDeviceId)
       args.push('-i', deviceIndex)
       console.log('📹 Using webcam device index:', deviceIndex)
     }
