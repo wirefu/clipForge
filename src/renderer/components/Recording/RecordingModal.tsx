@@ -70,6 +70,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     // Find the selected source from the sources array
     const selectedSource = sources.find(source => source.id === selectedSourceId)
     if (!selectedSource) {
+      console.error('Selected source not found:', { selectedSourceId, sources })
       alert('Selected source not found. Please refresh and try again.')
       return
     }
