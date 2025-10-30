@@ -8,9 +8,11 @@ interface TimelineComponentProps extends Omit<TimelineProps, 'onAddClip'> {
   onSelectClip?: (clipId: string) => void
   selectedClipId?: string
   onAddClip?: (clip: import('../../types').TimelineClip) => void
+  onExport?: () => void
+  canExport?: boolean
 }
 
-function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId, onAddClip }: TimelineComponentProps) {
+function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId, onAddClip, onExport, canExport }: TimelineComponentProps) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -186,7 +188,26 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
       
       <div className="timeline-footer">
         <div className="timeline-actions">
-          <button className="btn btn-primary">Export</button>
+          <button 
+            className={`btn btn-primary ${!canExport ? 'disabled' : ''}`}
+            onClick={() => {
+              console.log('Timeline Export button clicked!')
+              console.log('canExport:', canExport)
+              console.log('clips.length:', clips.length)
+              if (onExport) {
+                onExport()
+              } else {
+                console.error('onExport function not provided!')
+              }
+            }}
+            disabled={!canExport}
+            style={{
+              opacity: canExport ? 1 : 0.5,
+              cursor: canExport ? 'pointer' : 'not-allowed'
+            }}
+          >
+            Export {canExport ? '✓' : '✗'}
+          </button>
           <button className="btn btn-secondary">Save Project</button>
         </div>
       </div>

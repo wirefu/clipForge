@@ -201,6 +201,13 @@ function Editor() {
           onUpdateClip={handleUpdateClip}
           onSelectClip={handleSelectClip}
           selectedClipId={selectedClipId}
+          onExport={() => {
+            console.log('Timeline export button clicked!')
+            console.log('Current timelineClips:', timelineClips.length)
+            console.log('Setting showExportModal to true')
+            setShowExportModal(true)
+          }}
+          canExport={timelineClips.length > 0}
         />
       </div>
 
