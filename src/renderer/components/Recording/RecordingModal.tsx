@@ -31,9 +31,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     selectRecordingOutputDir
   } = recordingHook
 
-  // Debug: Log the entire hook result
-  console.log('RecordingModal: useRecording hook result:', recordingHook)
-  console.log('RecordingModal: selectedSourceId from hook:', selectedSourceId)
 
   const [selectedSource, setSelectedSourceState] = useState<RecordingSource | null>(null)
   const [recordingSettings, setRecordingSettings] = useState<Partial<RecordingSettings>>({
@@ -60,10 +57,8 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   }, [isOpen])
 
   const handleSourceSelect = (source: RecordingSource) => {
-    console.log('RecordingModal: Source selected:', source)
     setSelectedSourceState(source)
     setSelectedSource(source.id)
-    console.log('RecordingModal: selectedSourceId after setSelectedSource:', selectedSourceId)
   }
 
   const handleStartRecording = async () => {
@@ -73,10 +68,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     }
 
     // Find the selected source from the sources array
-    console.log('Looking for source with ID:', selectedSourceId)
-    console.log('Available sources:', sources)
     const selectedSource = sources.find(source => source.id === selectedSourceId)
-    console.log('Found selectedSource:', selectedSource)
     if (!selectedSource) {
       console.error('Selected source not found:', { selectedSourceId, sources })
       alert('Selected source not found. Please refresh and try again.')
@@ -97,7 +89,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       }
 
       const fullSettings: RecordingSettings = {
-        sourceId: selectedSource.id,
+        sourceId: selectedSourceId, // Use selectedSourceId directly from Redux
         sourceType: selectedSource.type,
         resolution: recordingSettings.resolution!,
         framerate: recordingSettings.framerate!,
@@ -151,12 +143,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
 
   if (!isOpen) return null
 
-  console.log('RecordingModal: Current state:', {
-    selectedSourceId,
-    sources: sources.length,
-    isRecording,
-    isPaused
-  })
 
   return (
     <div className="recording-modal-overlay">

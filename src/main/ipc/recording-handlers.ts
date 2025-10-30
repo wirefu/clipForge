@@ -36,9 +36,6 @@ export function registerRecordingHandlers() {
   ipcMain.handle(IPC_CHANNELS.RECORDING.START_RECORDING, async (event, settings: RecordingSettings) => {
     try {
       console.log('Starting recording with settings:', settings)
-      console.log('Settings type:', typeof settings)
-      console.log('Settings keys:', settings ? Object.keys(settings) : 'undefined')
-      console.log('sourceId:', settings?.sourceId)
       
       // Validate settings
       if (!settings.sourceId) {
