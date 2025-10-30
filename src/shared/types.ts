@@ -3,6 +3,7 @@
 
 // Re-export export types
 export * from '../renderer/types/export.types'
+export * from '../renderer/types/recording.types'
 
 export interface MediaFile {
   id: string

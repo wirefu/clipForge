@@ -45,14 +45,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getWebcamDevices: (): Promise<RecordingSource[]> => 
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES),
     
-    startRecording: (settings: RecordingSettings): Promise<boolean> => 
+    startRecording: (settings: RecordingSettings): Promise<{ success: boolean; error?: string }> => 
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.START_RECORDING, settings),
     
-    stopRecording: (): Promise<string | null> => 
+    stopRecording: (): Promise<{ success: boolean; outputPath?: string; error?: string }> => 
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.STOP_RECORDING),
     
-    getStatus: (): Promise<{ isRecording: boolean; outputPath?: string }> => 
+    getStatus: (): Promise<{ isRecording: boolean; duration: number; outputPath?: string }> => 
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.GET_RECORDING_STATUS),
+    
+    selectOutputDir: (): Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }> => 
+      ipcRenderer.invoke('recording:select-output-dir'),
+    
+    selectOutputFile: (defaultFilename: string): Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }> => 
+      ipcRenderer.invoke('recording:select-output-file', { defaultFilename }),
   },
   
   // Timeline operations
@@ -168,9 +174,11 @@ declare global {
       recording: {
         getScreenSources: () => Promise<RecordingSource[]>
         getWebcamDevices: () => Promise<RecordingSource[]>
-        startRecording: (settings: RecordingSettings) => Promise<boolean>
-        stopRecording: () => Promise<string | null>
-        getStatus: () => Promise<{ isRecording: boolean; outputPath?: string }>
+        startRecording: (settings: RecordingSettings) => Promise<{ success: boolean; error?: string }>
+        stopRecording: () => Promise<{ success: boolean; outputPath?: string; error?: string }>
+        getStatus: () => Promise<{ isRecording: boolean; duration: number; outputPath?: string }>
+        selectOutputDir: () => Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }>
+        selectOutputFile: (defaultFilename: string) => Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }>
       }
       timeline: {
         addClip: (mediaFile: MediaFile, trackId: string, startTime: number) => Promise<void>

@@ -11,39 +11,16 @@ import {
 // Import the new file handlers
 import './file-handlers'
 import { registerExportHandlers } from './export-handlers'
+import { registerRecordingHandlers } from './recording-handlers'
 
 export function setupIpcHandlers(): void {
   // File operations are now handled in file-handlers.ts
   // Export operations are now handled in export-handlers.ts
+  // Recording operations are now handled in recording-handlers.ts
   registerExportHandlers()
+  registerRecordingHandlers()
 
-  // Recording operations (placeholders)
-  ipcMain.handle(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES, async () => {
-    // TODO: Implement screen source detection
-    return []
-  })
-
-  ipcMain.handle(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES, async () => {
-    // TODO: Implement webcam device detection
-    return []
-  })
-
-  ipcMain.handle(IPC_CHANNELS.RECORDING.START_RECORDING, async (_, settings) => {
-    // TODO: Implement recording start
-    console.log('Starting recording with settings:', settings)
-    return true
-  })
-
-  ipcMain.handle(IPC_CHANNELS.RECORDING.STOP_RECORDING, async () => {
-    // TODO: Implement recording stop
-    console.log('Stopping recording')
-    return null
-  })
-
-  ipcMain.handle(IPC_CHANNELS.RECORDING.GET_RECORDING_STATUS, async () => {
-    // TODO: Implement recording status
-    return { isRecording: false }
-  })
+  // Recording operations are now handled in recording-handlers.ts
 
   // Timeline operations (placeholders)
   ipcMain.handle(IPC_CHANNELS.TIMELINE.ADD_CLIP, async (_, { mediaFile, trackId, startTime }) => {

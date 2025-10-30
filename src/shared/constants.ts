@@ -70,6 +70,27 @@ export const RECORDING_DEFAULTS = {
   video: true,
 } as const
 
+export const RECORDING_RESOLUTIONS = [
+  { width: 1280, height: 720, name: '720p HD' },
+  { width: 1920, height: 1080, name: '1080p Full HD' },
+  { width: 2560, height: 1440, name: '1440p QHD' },
+  { width: 3840, height: 2160, name: '4K UHD' },
+] as const
+
+export const RECORDING_FRAME_RATES = [
+  { value: 24, name: '24 fps (Cinema)' },
+  { value: 30, name: '30 fps (Standard)' },
+  { value: 60, name: '60 fps (Smooth)' },
+  { value: 120, name: '120 fps (High Speed)' },
+] as const
+
+export const RECORDING_BITRATES = {
+  low: 2000,      // 2 Mbps
+  medium: 5000,   // 5 Mbps
+  high: 8000,     // 8 Mbps
+  ultra: 12000,   // 12 Mbps
+} as const
+
 export const FILE_SIZE_LIMITS = {
   maxVideoSize: 500 * 1024 * 1024, // 500 MB
   maxAudioSize: 100 * 1024 * 1024, // 100 MB
