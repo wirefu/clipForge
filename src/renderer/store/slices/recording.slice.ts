@@ -62,14 +62,8 @@ const recordingSlice = createSlice({
     
     // Progress updates
     updateProgress: (state, action: PayloadAction<RecordingProgress>) => {
-      console.log('🎬 Redux updateProgress - payload:', action.payload)
-      console.log('🎬 Redux updateProgress - duration:', action.payload?.duration)
-      console.log('🎬 Redux updateProgress - isRecording:', state.isRecording)
-      console.log('🎬 Redux updateProgress - startTime:', state.startTime)
-      
       if (state.isRecording && state.startTime) {
         state.duration = action.payload.duration || 0
-        console.log('🎬 Redux updateProgress - updated duration to:', state.duration)
       }
     },
     

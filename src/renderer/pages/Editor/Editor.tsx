@@ -27,7 +27,6 @@ function Editor() {
   const timelineClips = timelineState.clips
   const selectedClipId = timelineState.selectedClipId
 
-
   // Set up IPC listeners for export progress
   React.useEffect(() => {
     const handleExportProgress = (event: any, data: any) => {
@@ -85,7 +84,6 @@ function Editor() {
   }
 
   const handleRecord = () => {
-    console.log('Record button clicked!')
     setShowRecordingModal(true)
   }
 
@@ -136,7 +134,6 @@ function Editor() {
   const trimStart = selectedClip?.trimStart || 0
   const trimEnd = selectedClip?.trimEnd || selectedMedia?.duration || 0
   const clipStart = selectedClip?.start || 0
-  
 
   return (
     <div className="editor">
@@ -146,9 +143,6 @@ function Editor() {
               onPlayPause={handlePlayPause}
               currentTime={currentTime}
               onExport={() => {
-                console.log('Export button clicked!')
-                console.log('Current timelineClips:', timelineClips.length)
-                console.log('Setting showExportModal to true')
                 setShowExportModal(true)
               }}
               canExport={timelineClips.length > 0}
@@ -196,9 +190,6 @@ function Editor() {
           onSelectClip={handleSelectClip}
           selectedClipId={selectedClipId}
           onExport={() => {
-            console.log('Timeline export button clicked!')
-            console.log('Current timelineClips:', timelineClips.length)
-            console.log('Setting showExportModal to true')
             setShowExportModal(true)
           }}
           canExport={timelineClips.length > 0}
@@ -206,7 +197,6 @@ function Editor() {
       </div>
 
       {/* Export Modal */}
-      {console.log('Rendering ExportModal with isOpen:', showExportModal)}
       <ExportModal
         isOpen={showExportModal}
         onClose={handleExportClose}

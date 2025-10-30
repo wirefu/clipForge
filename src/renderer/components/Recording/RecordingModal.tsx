@@ -62,7 +62,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      console.log('RecordingModal opened, webcamDevices:', webcamDevices)
+      // Modal opened
     }
   }, [isOpen, webcamDevices])
 
@@ -132,12 +132,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       }
 
       if (!selectedSource) {
-        console.error('❌ Selected source not found!')
-        console.error('  recordingType:', recordingType)
-        console.error('  selectedSourceId:', selectedSourceId)
-        console.error('  selectedWebcamId:', selectedWebcamId)
-        console.error('  available webcamDevices:', webcamDevices.map(d => ({ id: d.id, name: d.name })))
-        console.error('  available sources:', sources.map(s => ({ id: s.id, name: s.name })))
         alert('Selected source not found. Please refresh and try again.')
         return
       }
@@ -156,12 +150,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         webcamDeviceId: recordingType === 'webcam' || recordingType === 'both' ? selectedWebcamId : undefined
       }
 
-      console.log('🎬 Starting recording with settings:', {
-        sourceType: fullSettings.sourceType,
-        sourceId: fullSettings.sourceId,
-        recordingType,
-        selectedWebcamId
-      })
 
       await startRecording(fullSettings)
     } catch (err: any) {

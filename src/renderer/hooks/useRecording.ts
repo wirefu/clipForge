@@ -30,15 +30,8 @@ export const useRecording = () => {
 
   // Listen for recording progress updates
   const handleProgressUpdate = useCallback((event: any, progress: any) => {
-    console.log('🎬 Progress update received - event:', event)
-    console.log('🎬 Progress update received - progress:', progress)
-    console.log('🎬 Progress update received - typeof progress:', typeof progress)
-    
     // Extract the actual progress data from the IPC event
     const progressData = progress || event
-    console.log('🎬 Using progressData:', progressData)
-    console.log('🎬 progressData.duration:', progressData?.duration)
-    
     dispatch(updateProgress(progressData))
   }, [dispatch])
 
@@ -95,23 +88,17 @@ export const useRecording = () => {
   // Load webcam devices using navigator.mediaDevices
   const loadWebcamDevices = useCallback(async () => {
     try {
-      console.log('Loading webcam devices using navigator.mediaDevices...')
-      
       // First, request permission to access camera
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        console.log('Got user media permission, stopping stream...')
         stream.getTracks().forEach(track => track.stop())
       } catch (permissionError) {
-        console.log('Permission denied or no webcam available:', permissionError)
+        // Permission denied or no webcam available
       }
       
       // Now enumerate devices
       const devices = await navigator.mediaDevices.enumerateDevices()
-      console.log('All devices:', devices)
-      
       const videoDevices = devices.filter(device => device.kind === 'videoinput')
-      console.log('Video devices:', videoDevices)
       
       const webcamSources = videoDevices.map((device, index) => ({
         id: device.deviceId || `webcam-${index}`,
@@ -121,7 +108,6 @@ export const useRecording = () => {
         deviceId: device.deviceId
       }))
       
-      console.log('Found webcam devices:', webcamSources)
       dispatch(setWebcamDevices(webcamSources))
     } catch (error) {
       console.error('Error loading webcam devices:', error)
@@ -132,8 +118,6 @@ export const useRecording = () => {
   // Handle webcam recording using MediaRecorder
   const handleWebcamRecording = useCallback(async (settings: RecordingSettings) => {
     try {
-      console.log('🎬 Starting webcam recording with MediaRecorder...')
-      
       // Find the webcam source
       const source = recordingState.webcamDevices.find(s => s.id === settings.sourceId)
       if (!source) {
@@ -152,8 +136,6 @@ export const useRecording = () => {
         audio: settings.audioEnabled
       })
       
-      console.log('🎬 Got webcam stream:', stream)
-      
       // Create MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
@@ -164,8 +146,6 @@ export const useRecording = () => {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const filename = `${settings.filename}-${timestamp}.webm`
       const outputPath = `${settings.outputPath}/${filename}`
-      
-      console.log('🎬 Recording to:', outputPath)
       
       // Store recording state
       dispatch(startRecording({ source, settings }))
@@ -184,10 +164,7 @@ export const useRecording = () => {
       }
       
       mediaRecorder.onstop = () => {
-        console.log('🎬 Webcam recording stopped')
         const blob = new Blob(chunks, { type: 'video/webm' })
-        
-        console.log('🎬 Blob created:', { size: blob.size, type: blob.type })
         
         if (blob.size > 0) {
           // Save the file
@@ -200,10 +177,8 @@ export const useRecording = () => {
           a.click()
           document.body.removeChild(a)
           URL.revokeObjectURL(url)
-          
-          console.log('🎬 File saved:', filename)
         } else {
-          console.error('🎬 No data recorded - blob is empty')
+          console.error('No data recorded - blob is empty')
         }
         
         // Stop all tracks
@@ -242,17 +217,9 @@ export const useRecording = () => {
     try {
       dispatch(clearRecordingError())
       
-      console.log('🎬 useRecording handleStartRecording called with settings:', {
-        sourceType: settings.sourceType,
-        sourceId: settings.sourceId,
-        webcamDeviceId: settings.webcamDeviceId
-      })
-      
       if (settings.sourceType === 'webcam') {
-        console.log('🎬 Starting webcam recording with MediaRecorder...')
         await handleWebcamRecording(settings)
       } else {
-        console.log('🎬 Starting screen recording with FFmpeg...')
         const result = await window.electronAPI.recording.startRecording(settings)
         
         if (result.success) {

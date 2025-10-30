@@ -64,9 +64,9 @@
 }
 
 .track-header {
-  height: 30px;
-  background-color: #1e1e1e;
-  border-bottom: 1px solid #333;
+  height: 40px;
+  background-color: #333;
+  border-bottom: 1px solid #444;
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -92,7 +92,7 @@
   left: 0;
   right: 0;
   height: 30px;
-  background-color: #1e1e1e;
+  background-color: #252525;
   border-bottom: 1px solid #333;
 }
 
@@ -124,7 +124,6 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #1e1e1e;
 }
 
 .timeline-clip {

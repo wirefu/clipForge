@@ -20,6 +20,7 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
     e.stopPropagation()
     e.preventDefault()
     
+    console.log('Mouse down on handle:', handle)
     setIsDragging(handle)
     setDragStart({
       x: e.clientX,
@@ -43,6 +44,7 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
     } else if (isDragging === 'right') {
       // Dragging right handle (trim end)
       const newTrimEnd = Math.max(dragStart.trimEnd + deltaTime, clip.trimStart + 0.1)
+      console.log('Right handle drag:', { deltaX, deltaTime, newTrimEnd, originalTrimEnd: dragStart.trimEnd })
       onUpdateClip(clip.id, { trimEnd: Math.min(newTrimEnd, clip.duration) })
     } else if (isDragging === 'center') {
       // Dragging entire clip
@@ -71,6 +73,16 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
   const trimStartPercentage = getTrimStartPercentage(clip)
   const trimEndPercentage = getTrimEndPercentage(clip)
   
+  console.log('TimelineClip: Trim calculations:', {
+    clipId: clip.id,
+    trimStart: clip.trimStart,
+    trimEnd: clip.trimEnd,
+    duration: clip.duration,
+    trimmedDuration,
+    trimStartPercentage,
+    trimEndPercentage,
+    rightHandlePosition: (trimStartPercentage + (trimmedDuration / clip.duration)) * 100
+  })
 
   // Calculate visual positions
   const clipLeft = clip.start
