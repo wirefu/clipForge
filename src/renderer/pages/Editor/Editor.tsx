@@ -31,6 +31,24 @@ function Editor() {
   console.log('Editor: Timeline state:', timelineState)
   console.log('Editor: Timeline clips:', timelineClips)
   console.log('Editor: Selected clip ID:', selectedClipId)
+  
+  // Test Redux store connection
+  React.useEffect(() => {
+    console.log('Editor: Testing Redux store connection...')
+    const testClip: TimelineClip = {
+      id: 'test-clip-' + Date.now(),
+      mediaFileId: 'test-media',
+      trackId: 'track-1',
+      start: 0,
+      duration: 10,
+      trimStart: 0,
+      trimEnd: 10,
+      volume: 1,
+      muted: false
+    }
+    console.log('Editor: Dispatching test clip:', testClip)
+    dispatch(addClip(testClip))
+  }, [dispatch])
 
   // Set up IPC listeners for export progress
   React.useEffect(() => {
