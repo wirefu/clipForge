@@ -57,8 +57,10 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   }, [isOpen])
 
   const handleSourceSelect = (source: RecordingSource) => {
+    console.log('DEBUG: handleSourceSelect called with:', source)
     setSelectedSourceState(source)
     setSelectedSource(source.id)
+    console.log('DEBUG: After setSelectedSource, selectedSourceId should be:', source.id)
   }
 
   const handleStartRecording = async () => {
@@ -259,6 +261,20 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                   ❌ {error}
                 </div>
               )}
+
+              {/* Debug Info */}
+              <div style={{ 
+                background: '#333', 
+                color: '#fff', 
+                padding: '10px', 
+                margin: '10px 0',
+                fontSize: '12px',
+                borderRadius: '4px'
+              }}>
+                <div>DEBUG: selectedSourceId = {selectedSourceId || 'null'}</div>
+                <div>DEBUG: sources.length = {sources.length}</div>
+                <div>DEBUG: sources = {JSON.stringify(sources.map(s => ({ id: s.id, name: s.name })), null, 2)}</div>
+              </div>
 
               {/* Action Buttons */}
               <div className="recording-actions">
