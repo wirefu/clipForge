@@ -1,0 +1,154 @@
+.recording-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid #ff4444;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(255, 68, 68, 0.3);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.recording-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recording-dot {
+  width: 12px;
+  height: 12px;
+  background: #ff4444;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.recording-text {
+  color: #ff4444;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.recording-timer {
+  display: flex;
+  align-items: center;
+}
+
+.timer-display {
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  min-width: 60px;
+  text-align: center;
+}
+
+.recording-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn {
+  background: #333;
+  border: 2px solid #555;
+  border-radius: 8px;
+  color: #fff;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+}
+
+.control-btn:hover {
+  background: #444;
+  border-color: #666;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.pause-btn {
+  border-color: #ffa500;
+}
+
+.pause-btn:hover {
+  background: #ffa500;
+  color: #000;
+}
+
+.resume-btn {
+  border-color: #4ade80;
+}
+
+.resume-btn:hover {
+  background: #4ade80;
+  color: #000;
+}
+
+.stop-btn {
+  border-color: #ff4444;
+}
+
+.stop-btn:hover {
+  background: #ff4444;
+  color: #fff;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .recording-controls {
+    top: 10px;
+    right: 10px;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  
+  .timer-display {
+    font-size: 16px;
+    min-width: 50px;
+  }
+  
+  .control-btn {
+    min-width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}

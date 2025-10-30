@@ -5,9 +5,10 @@ import './Toolbar.css'
 interface ExtendedToolbarProps extends ToolbarProps {
   onExport?: () => void
   canExport?: boolean
+  onRecord?: () => void
 }
 
-function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = false }: ExtendedToolbarProps) {
+function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = false, onRecord }: ExtendedToolbarProps) {
   const [volume, setVolume] = useState(100)
   
   console.log('Toolbar rendered with canExport:', canExport, 'onExport:', !!onExport)
@@ -60,6 +61,14 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
         </button>
         <button className="toolbar-btn" title="Delete">
           🗑
+        </button>
+        <div className="toolbar-separator" />
+        <button 
+          className="toolbar-btn record-btn"
+          onClick={onRecord}
+          title="Record Screen"
+        >
+          🎬
         </button>
       </div>
       

@@ -8,6 +8,7 @@ import VideoPreview from '../../components/VideoPreview/VideoPreview'
 import Timeline from '../../components/Timeline/Timeline'
 import Toolbar from '../../components/Toolbar/Toolbar'
 import ExportModal from '../../components/ExportModal/ExportModal'
+import { RecordingModal } from '../../components/Recording/RecordingModal'
 import './Editor.css'
 
 function Editor() {
@@ -18,6 +19,7 @@ function Editor() {
   const [currentTime, setCurrentTime] = useState(0)
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showRecordingModal, setShowRecordingModal] = useState(false)
 
   // Export state from Redux
   const exportState = useSelector((state: RootState) => state.export)
@@ -91,6 +93,11 @@ function Editor() {
     setIsPlaying(false)
   }
 
+  const handleRecord = () => {
+    console.log('Record button clicked!')
+    setShowRecordingModal(true)
+  }
+
   const handleExport = async (settings: any) => {
     try {
       const jobId = `export-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -156,6 +163,7 @@ function Editor() {
                 setShowExportModal(true)
               }}
               canExport={timelineClips.length > 0}
+              onRecord={handleRecord}
             />
           </div>
       
@@ -221,6 +229,11 @@ function Editor() {
         speed={exportState.progress.speed}
         eta={exportState.progress.eta}
         error={exportState.error}
+      />
+      
+      <RecordingModal
+        isOpen={showRecordingModal}
+        onClose={() => setShowRecordingModal(false)}
       />
     </div>
   )

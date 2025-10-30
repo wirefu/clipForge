@@ -179,3 +179,22 @@
     display: none;
   }
 }
+
+.record-btn {
+  background-color: #dc2626;
+  border-color: #ef4444;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.record-btn:hover {
+  background-color: #ef4444;
+  border-color: #f87171;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.record-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
