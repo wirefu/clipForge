@@ -87,7 +87,6 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
         muted: false
       }
 
-      console.log('Adding clip to timeline:', newClip)
       onAddClip(newClip)
     } catch (error) {
       console.error('Error adding clip to timeline:', error)
