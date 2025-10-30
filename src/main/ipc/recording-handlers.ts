@@ -6,10 +6,16 @@ import { RecordingSettings } from '../../shared/types/recording.types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
 export function registerRecordingHandlers() {
-  // Check if handler already exists
+  // Check if handler already exists and remove it first
   if (ipcMain.listenerCount(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES) > 0) {
-    console.log('Recording handlers already registered, skipping...')
-    return
+    console.log('Recording handlers already registered, removing old handlers...')
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES)
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES)
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.START_RECORDING)
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.STOP_RECORDING)
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_RECORDING_STATUS)
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_DIR)
+    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_FILE)
   }
   
   console.log('Registering recording handlers...')
@@ -108,6 +114,11 @@ export function registerRecordingHandlers() {
         console.log('Recording stopped successfully, output:', result.outputPath)
         return { success: true, outputPath: result.outputPath }
       } else {
+        // Don't treat "No recording in progress" as an error
+        if (result.error === 'No recording in progress') {
+          console.log('No recording was in progress')
+          return { success: true, outputPath: null }
+        }
         console.error('Failed to stop recording:', result.error)
         return { success: false, error: result.error }
       }

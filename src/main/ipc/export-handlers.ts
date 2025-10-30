@@ -49,10 +49,15 @@ function convertToExportTimeline(clips: TimelineClip[], mediaFiles: any[]): Expo
 }
 
 export function registerExportHandlers() {
-  // Check if handler already exists
+  // Check if handler already exists and remove it first
   if (ipcMain.listenerCount(IPC_CHANNELS.EXPORT.START_EXPORT) > 0) {
-    console.log('Export handlers already registered, skipping...')
-    return
+    console.log('Export handlers already registered, removing old handlers...')
+    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.START_EXPORT)
+    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.STOP_EXPORT)
+    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.GET_EXPORT_STATUS)
+    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.GET_PRESETS)
+    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_DIR)
+    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_FILE)
   }
   
   console.log('Registering export handlers...')
