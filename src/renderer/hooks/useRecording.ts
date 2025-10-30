@@ -110,14 +110,30 @@ export const useRecording = () => {
     try {
       dispatch(clearRecordingError())
       
+      console.log('🎬 useRecording handleStartRecording called with settings:', settings)
+      
       const result = await window.electronAPI.recording.startRecording(settings)
       
       if (result.success) {
-        // Find the source from the settings
-        const source = recordingState.sources.find(s => s.id === settings.sourceId)
+        // Find the source from the appropriate array based on source type
+        let source = null
+        if (settings.sourceType === 'webcam') {
+          source = recordingState.webcamDevices.find(s => s.id === settings.sourceId)
+          console.log('🎬 Looking for webcam source:', { sourceId: settings.sourceId, foundSource: source })
+        } else {
+          source = recordingState.sources.find(s => s.id === settings.sourceId)
+          console.log('🎬 Looking for screen source:', { sourceId: settings.sourceId, foundSource: source })
+        }
+        
         if (source) {
           dispatch(startRecording({ source, settings }))
         } else {
+          console.error('❌ Source not found in useRecording hook:', {
+            sourceType: settings.sourceType,
+            sourceId: settings.sourceId,
+            availableSources: recordingState.sources.map(s => ({ id: s.id, name: s.name })),
+            availableWebcams: recordingState.webcamDevices.map(s => ({ id: s.id, name: s.name }))
+          })
           dispatch(setRecordingError('Selected source not found'))
         }
       } else {
@@ -127,7 +143,7 @@ export const useRecording = () => {
       console.error('Error starting recording:', error)
       dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to start recording'))
     }
-  }, [dispatch, recordingState.sources])
+  }, [dispatch, recordingState.sources, recordingState.webcamDevices])
 
   // Stop recording
   const handleStopRecording = useCallback(async () => {

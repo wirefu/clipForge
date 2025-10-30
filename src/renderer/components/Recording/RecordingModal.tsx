@@ -118,21 +118,37 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       let sourceType = 'screen' as const
       let selectedSource = null
 
+      console.log('🔍 Debug recording start:')
+      console.log('  recordingType:', recordingType)
+      console.log('  selectedSourceId:', selectedSourceId)
+      console.log('  selectedWebcamId:', selectedWebcamId)
+      console.log('  webcamDevices:', webcamDevices)
+      console.log('  sources:', sources)
+
       if (recordingType === 'webcam') {
         sourceId = selectedWebcamId
         sourceType = 'webcam'
         // Find the webcam source from webcamDevices
         selectedSource = webcamDevices.find(device => device.id === selectedWebcamId)
+        console.log('  Webcam source lookup:', { selectedWebcamId, foundSource: selectedSource })
       } else if (recordingType === 'both') {
         sourceId = selectedSourceId
         sourceType = 'screen'
         selectedSource = sources.find(source => source.id === selectedSourceId)
+        console.log('  Screen source lookup:', { selectedSourceId, foundSource: selectedSource })
       } else {
         // Screen only
         selectedSource = sources.find(source => source.id === selectedSourceId)
+        console.log('  Screen only source lookup:', { selectedSourceId, foundSource: selectedSource })
       }
 
       if (!selectedSource) {
+        console.error('❌ Selected source not found!')
+        console.error('  recordingType:', recordingType)
+        console.error('  selectedSourceId:', selectedSourceId)
+        console.error('  selectedWebcamId:', selectedWebcamId)
+        console.error('  available webcamDevices:', webcamDevices.map(d => ({ id: d.id, name: d.name })))
+        console.error('  available sources:', sources.map(s => ({ id: s.id, name: s.name })))
         alert('Selected source not found. Please refresh and try again.')
         return
       }
