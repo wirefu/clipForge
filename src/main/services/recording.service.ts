@@ -298,10 +298,12 @@ export class RecordingService {
     // For webcam recording, use supported resolution and frame rate
     if (settings.sourceType === 'webcam') {
       args.push(
-        '-s', '1280x720',  // Use 720p instead of 1080p
-        '-r', '30',        // Use exact 30fps instead of 29.97
+        '-framerate', '30.000030',  // Use exact frame rate that webcam supports
+        '-s', '1280x720',           // Use 720p instead of 1080p
         '-b:v', `${settings.bitrate}k`,
-        '-pix_fmt', 'yuv420p'
+        '-avoid_negative_ts', 'make_zero'  // Fix timestamp issues
+        // Note: Removed -pix_fmt yuv420p as webcam doesn't support it
+        // FFmpeg will auto-detect the correct pixel format (uyvy422)
       )
     } else {
       args.push(
