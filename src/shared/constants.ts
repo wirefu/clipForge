@@ -48,8 +48,8 @@ export const DEFAULT_EXPORT_SETTINGS = {
   format: 'mp4' as const,
   quality: 'medium' as const,
   resolution: {
-    width: 1920,
-    height: 1080,
+    width: 1280,
+    height: 720,
   },
   frameRate: 30,
   bitrate: 5000000, // 5 Mbps

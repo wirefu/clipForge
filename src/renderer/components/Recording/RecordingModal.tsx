@@ -38,7 +38,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   const [recordingType, setRecordingType] = useState<'screen' | 'webcam' | 'both'>('screen')
   const [selectedWebcamId, setSelectedWebcamId] = useState<string>('')
   const [recordingSettings, setRecordingSettings] = useState<Partial<RecordingSettings>>({
-    resolution: { width: 1920, height: 1080 },
+    resolution: { width: 1280, height: 720 },
     framerate: 30,
     bitrate: 5000,
     audioEnabled: true,
@@ -52,7 +52,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       setRecordingType('screen')
       setSelectedWebcamId('')
       setRecordingSettings({
-        resolution: { width: 1920, height: 1080 },
+        resolution: { width: 1280, height: 720 },
         framerate: 30,
         bitrate: 5000,
         audioEnabled: true,
