@@ -27,6 +27,11 @@ function Editor() {
   const timelineClips = timelineState.clips
   const selectedClipId = timelineState.selectedClipId
 
+  // Debug logging
+  console.log('Editor: Timeline state:', timelineState)
+  console.log('Editor: Timeline clips:', timelineClips)
+  console.log('Editor: Selected clip ID:', selectedClipId)
+
   // Set up IPC listeners for export progress
   React.useEffect(() => {
     const handleExportProgress = (event: any, data: any) => {
@@ -69,7 +74,9 @@ function Editor() {
 
   const handleAddClip = (clip: TimelineClip) => {
     console.log('Editor: Adding clip to Redux state:', clip)
+    console.log('Editor: Current timeline clips before add:', timelineClips)
     dispatch(addClip(clip))
+    console.log('Editor: Dispatched addClip action')
   }
 
   const handleUpdateClip = (clipId: string, updates: Partial<TimelineClip>) => {
