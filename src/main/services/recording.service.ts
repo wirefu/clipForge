@@ -127,10 +127,8 @@ export class RecordingService {
    */
   async startRecording(settings: RecordingSettings): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('🎬 RecordingService.startRecording called with:', settings)
       
       if (this.isRecording) {
-        console.log('❌ Recording already in progress')
         return { success: false, error: 'Recording already in progress' }
       }
 
@@ -138,11 +136,9 @@ export class RecordingService {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const filename = `${settings.filename}-${timestamp}.${settings.format}`
       this.outputPath = join(settings.outputPath, filename)
-      console.log('📁 Output path:', this.outputPath)
 
       // Build FFmpeg command for screen recording
       const ffmpegArgs = await this.buildFFmpegCommand(settings)
-      console.log('🎬 FFmpeg command:', 'ffmpeg', ffmpegArgs.join(' '))
 
       // Start FFmpeg process
       this.recordingProcess = spawn('ffmpeg', ffmpegArgs, {
@@ -155,23 +151,19 @@ export class RecordingService {
       })
 
       this.recordingProcess.on('exit', (code) => {
-        console.log('🏁 FFmpeg process exited with code:', code)
         this.isRecording = false
       })
 
       // Add stderr logging to see FFmpeg output
       this.recordingProcess.stderr?.on('data', (data) => {
-        console.log('🎬 FFmpeg stderr:', data.toString())
       })
 
       // Add stdout logging
       this.recordingProcess.stdout?.on('data', (data) => {
-        console.log('🎬 FFmpeg stdout:', data.toString())
       })
 
       this.isRecording = true
       this.startTime = Date.now()
-      console.log('✅ Recording started successfully')
 
       return { success: true }
 
@@ -240,11 +232,9 @@ export class RecordingService {
    */
   private async getWebcamDeviceIndex(webcamDeviceId?: string): Promise<string> {
     try {
-      console.log('🔍 Getting webcam device index for deviceId:', webcamDeviceId)
       
       // Get FFmpeg device list to find the correct index
       const devices = await this.getFFmpegDevices()
-      console.log('🔍 Available FFmpeg video devices:', devices.video)
       
       // For webcam recording, we'll use the first available video device
       // This is a simplified approach - in practice, you might need more sophisticated detection
@@ -264,7 +254,6 @@ export class RecordingService {
       const audioIndex = 0
       
       const deviceIndex = `${videoIndex}:${audioIndex}`
-      console.log(`📹 Selected webcam device index: ${deviceIndex} (video: ${devices.video[videoIndex]})`)
       
       return deviceIndex
     } catch (error) {
@@ -279,16 +268,13 @@ export class RecordingService {
   private async buildFFmpegCommand(settings: RecordingSettings): Promise<string[]> {
     const args: string[] = []
 
-    console.log('🔧 Building FFmpeg command for:', settings.sourceType)
 
     if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
       args.push('-f', 'avfoundation')
       args.push('-i', '1:0')
-      console.log('📺 Using screen capture: 1:0')
     } else if (settings.sourceType === 'webcam') {
       // Webcam recording is handled in the renderer process using MediaRecorder
       // This is a placeholder - actual webcam recording uses MediaRecorder API
-      console.log('📹 Webcam recording handled in renderer process with MediaRecorder')
       return []
     }
 
@@ -312,16 +298,13 @@ export class RecordingService {
 
     if (settings.audioEnabled) {
       args.push('-b:a', '128k')
-      console.log('🔊 Audio enabled')
     } else {
       args.push('-an')
-      console.log('🔇 Audio disabled')
     }
 
     args.push('-f', settings.format)
     args.push(this.outputPath!)
 
-    console.log('🎬 Final FFmpeg args:', args)
     return args
   }
 }

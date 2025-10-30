@@ -17,7 +17,6 @@ let handlersRegistered = false
 
 export function setupIpcHandlers(): void {
   if (handlersRegistered) {
-    console.log('IPC handlers already registered, skipping...')
     return
   }
   
@@ -28,29 +27,24 @@ export function setupIpcHandlers(): void {
   registerRecordingHandlers()
   
   handlersRegistered = true
-  console.log('IPC handlers registered successfully')
 
   // Recording operations are now handled in recording-handlers.ts
 
   // Timeline operations (placeholders)
   ipcMain.handle(IPC_CHANNELS.TIMELINE.ADD_CLIP, async (_, { mediaFile, trackId, startTime }) => {
     // TODO: Implement timeline clip addition
-    console.log('Adding clip to timeline:', { mediaFile, trackId, startTime })
   })
 
   ipcMain.handle(IPC_CHANNELS.TIMELINE.REMOVE_CLIP, async (_, clipId) => {
     // TODO: Implement timeline clip removal
-    console.log('Removing clip from timeline:', clipId)
   })
 
   ipcMain.handle(IPC_CHANNELS.TIMELINE.UPDATE_CLIP, async (_, { clipId, updates }) => {
     // TODO: Implement timeline clip update
-    console.log('Updating timeline clip:', { clipId, updates })
   })
 
   ipcMain.handle(IPC_CHANNELS.TIMELINE.SET_PLAYHEAD, async (_, position) => {
     // TODO: Implement playhead position setting
-    console.log('Setting playhead position:', position)
   })
 
   ipcMain.handle(IPC_CHANNELS.TIMELINE.GET_TIMELINE_STATE, async () => {
@@ -67,7 +61,6 @@ export function setupIpcHandlers(): void {
   // Export operations (placeholders)
   ipcMain.handle(IPC_CHANNELS.EXPORT.START_EXPORT, async (_, settings) => {
     // TODO: Implement export start
-    console.log('Starting export with settings:', settings)
     return true
   })
 
@@ -82,7 +75,6 @@ export function setupIpcHandlers(): void {
 
   ipcMain.handle(IPC_CHANNELS.EXPORT.CANCEL_EXPORT, async () => {
     // TODO: Implement export cancellation
-    console.log('Canceling export')
   })
 
   ipcMain.handle(IPC_CHANNELS.EXPORT.GET_EXPORT_STATUS, async () => {

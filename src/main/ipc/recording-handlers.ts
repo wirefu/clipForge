@@ -81,7 +81,6 @@ export function registerRecordingHandlers() {
               bitrate: settings.bitrate
             })
           } else {
-            console.log('🎬 Main process: Recording stopped, clearing interval')
             clearInterval(progressInterval)
           }
         }, 1000) // Update every second
@@ -104,17 +103,14 @@ export function registerRecordingHandlers() {
   // Stop recording
   ipcMain.handle(IPC_CHANNELS.RECORDING.STOP_RECORDING, async () => {
     try {
-      console.log('Stopping recording...')
       
       const result = await recordingService.stopRecording()
       
       if (result.success) {
-        console.log('Recording stopped successfully, output:', result.outputPath)
         return { success: true, outputPath: result.outputPath }
       } else {
         // Don't treat "No recording in progress" as an error
         if (result.error === 'No recording in progress') {
-          console.log('No recording was in progress')
           return { success: true, outputPath: null }
         }
         console.error('Failed to stop recording:', result.error)
@@ -166,7 +162,6 @@ export function registerRecordingHandlers() {
       webcamRecordingStatus.startTime = null
     }
     
-    console.log('Webcam recording status updated:', webcamRecordingStatus)
     return { success: true }
   })
 
