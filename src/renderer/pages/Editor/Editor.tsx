@@ -154,7 +154,11 @@ function Editor() {
                 console.log('Setting showExportModal to true')
                 setShowExportModal(true)
               }}
-              canExport={timelineClips.length > 0}
+              canExport={(() => {
+                console.log('Editor: Checking canExport, timelineClips.length:', timelineClips.length)
+                console.log('Editor: timelineClips:', timelineClips)
+                return timelineClips.length > 0
+              })()}
             />
           </div>
       
