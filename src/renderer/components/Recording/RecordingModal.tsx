@@ -55,8 +55,10 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   }, [isOpen])
 
   const handleSourceSelect = (source: RecordingSource) => {
+    console.log('RecordingModal: Source selected:', source)
     setSelectedSourceState(source)
     setSelectedSource(source.id)
+    console.log('RecordingModal: selectedSourceId after setSelectedSource:', selectedSourceId)
   }
 
   const handleStartRecording = async () => {
@@ -139,6 +141,12 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   }
 
   if (!isOpen) return null
+
+  console.log('RecordingModal: Current state:', {
+    selectedSourceId,
+    sources: sources.length,
+    selectedSourceState: selectedSourceState?.id
+  })
 
   return (
     <div className="recording-modal-overlay">
@@ -261,8 +269,12 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                   className="btn btn-primary start-btn"
                   onClick={handleStartRecording}
                   disabled={!selectedSourceId}
+                  style={{ 
+                    backgroundColor: selectedSourceId ? '#007acc' : '#555',
+                    opacity: selectedSourceId ? 1 : 0.6 
+                  }}
                 >
-                  🎬 Start Recording
+                  🎬 Start Recording {selectedSourceId ? '✓' : '✗'}
                 </button>
                 <button
                   className="btn btn-secondary"
