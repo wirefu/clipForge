@@ -58,8 +58,11 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         audioEnabled: true,
         quality: 'medium'
       })
+      
+      // Debug webcam devices
+      console.log('RecordingModal opened, webcamDevices:', webcamDevices)
     }
-  }, [isOpen])
+  }, [isOpen, webcamDevices])
 
   const handleSourceSelect = (source: RecordingSource) => {
     setSelectedSourceState(source)
@@ -249,12 +252,19 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                       className="webcam-select"
                     >
                       <option value="">Select a webcam device...</option>
-                      {webcamDevices.map((device) => (
-                        <option key={device.id} value={device.id}>
-                          {device.name}
-                        </option>
-                      ))}
+                      {webcamDevices.length > 0 ? (
+                        webcamDevices.map((device) => (
+                          <option key={device.id} value={device.id}>
+                            {device.name}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="" disabled>No webcam devices found</option>
+                      )}
                     </select>
+                    <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                      Found {webcamDevices.length} webcam device(s)
+                    </div>
                     {selectedWebcamId && (
                       <WebcamPreview
                         deviceId={selectedWebcamId}

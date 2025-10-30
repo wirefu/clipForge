@@ -65,8 +65,20 @@ export const useRecording = () => {
   // Load webcam devices
   const loadWebcamDevices = useCallback(async () => {
     try {
-      const devices = await window.electronAPI.recording.getWebcamDevices()
-      dispatch(setWebcamDevices(devices))
+      // Enumerate webcam devices directly in renderer process
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const videoDevices = devices.filter(device => device.kind === 'videoinput')
+      
+      const webcamSources = videoDevices.map((device, index) => ({
+        id: device.deviceId || `webcam-${index}`,
+        name: device.label || `Webcam ${index + 1}`,
+        type: 'webcam' as const,
+        isAvailable: true,
+        deviceId: device.deviceId
+      }))
+      
+      console.log('Found webcam devices:', webcamSources)
+      dispatch(setWebcamDevices(webcamSources))
     } catch (error) {
       console.error('Error loading webcam devices:', error)
       dispatch(setRecordingError('Failed to load webcam devices'))

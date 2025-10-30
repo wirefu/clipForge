@@ -40,16 +40,9 @@ export class RecordingService {
    */
   async getWebcamDevices(): Promise<RecordingSource[]> {
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const videoDevices = devices.filter(device => device.kind === 'videoinput')
-      
-      return videoDevices.map((device, index) => ({
-        id: device.deviceId || `webcam-${index}`,
-        name: device.label || `Webcam ${index + 1}`,
-        type: 'webcam' as const,
-        isAvailable: true,
-        deviceId: device.deviceId
-      }))
+      // Webcam enumeration should be done in renderer process
+      // This is a placeholder - actual implementation is in useRecording hook
+      return []
     } catch (error) {
       console.error('Error getting webcam devices:', error)
       return []
