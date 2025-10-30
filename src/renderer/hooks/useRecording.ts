@@ -30,6 +30,7 @@ export const useRecording = () => {
 
   // Listen for recording progress updates
   const handleProgressUpdate = useCallback((progress: any) => {
+    console.log('🎬 Progress update received:', progress)
     dispatch(updateProgress(progress))
   }, [dispatch])
 

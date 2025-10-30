@@ -68,6 +68,7 @@ export function registerRecordingHandlers() {
         const progressInterval = setInterval(() => {
           if (recordingService.isCurrentlyRecording()) {
             const duration = recordingService.getRecordingDuration()
+            console.log('🎬 Main process: Sending progress update, duration:', duration)
             event.sender.send(IPC_CHANNELS.RECORDING.PROGRESS, {
               isRecording: true,
               duration,
@@ -76,6 +77,7 @@ export function registerRecordingHandlers() {
               bitrate: settings.bitrate
             })
           } else {
+            console.log('🎬 Main process: Recording stopped, clearing interval')
             clearInterval(progressInterval)
           }
         }, 1000) // Update every second
