@@ -105,37 +105,6 @@ export const useRecording = () => {
     }
   }, [dispatch])
 
-  // Start recording
-  const handleStartRecording = useCallback(async (settings: RecordingSettings) => {
-    try {
-      dispatch(clearRecordingError())
-      
-      console.log('🎬 useRecording handleStartRecording called with settings:', settings)
-      
-      if (settings.sourceType === 'webcam') {
-        // Handle webcam recording in renderer process using MediaRecorder
-        await handleWebcamRecording(settings)
-      } else {
-        // Handle screen recording in main process using FFmpeg
-        const result = await window.electronAPI.recording.startRecording(settings)
-        
-        if (result.success) {
-          const source = recordingState.sources.find(s => s.id === settings.sourceId)
-          if (source) {
-            dispatch(startRecording({ source, settings }))
-          } else {
-            dispatch(setRecordingError('Selected source not found'))
-          }
-        } else {
-          dispatch(setRecordingError(result.error || 'Failed to start recording'))
-        }
-      }
-    } catch (error) {
-      console.error('Error starting recording:', error)
-      dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to start recording'))
-    }
-  }, [dispatch, recordingState.sources, recordingState.webcamDevices])
-
   // Handle webcam recording using MediaRecorder
   const handleWebcamRecording = useCallback(async (settings: RecordingSettings) => {
     try {
@@ -213,6 +182,37 @@ export const useRecording = () => {
       dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to start webcam recording'))
     }
   }, [dispatch, recordingState.webcamDevices])
+
+  // Start recording
+  const handleStartRecording = useCallback(async (settings: RecordingSettings) => {
+    try {
+      dispatch(clearRecordingError())
+      
+      console.log('🎬 useRecording handleStartRecording called with settings:', settings)
+      
+      if (settings.sourceType === 'webcam') {
+        // Handle webcam recording in renderer process using MediaRecorder
+        await handleWebcamRecording(settings)
+      } else {
+        // Handle screen recording in main process using FFmpeg
+        const result = await window.electronAPI.recording.startRecording(settings)
+        
+        if (result.success) {
+          const source = recordingState.sources.find(s => s.id === settings.sourceId)
+          if (source) {
+            dispatch(startRecording({ source, settings }))
+          } else {
+            dispatch(setRecordingError('Selected source not found'))
+          }
+        } else {
+          dispatch(setRecordingError(result.error || 'Failed to start recording'))
+        }
+      }
+    } catch (error) {
+      console.error('Error starting recording:', error)
+      dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to start recording'))
+    }
+  }, [dispatch, recordingState.sources, recordingState.webcamDevices, handleWebcamRecording])
 
   // Stop recording
   const handleStopRecording = useCallback(async () => {
