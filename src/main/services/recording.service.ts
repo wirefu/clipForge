@@ -50,6 +50,69 @@ export class RecordingService {
   }
 
   /**
+   * Get FFmpeg device list for avfoundation
+   */
+  async getFFmpegDevices(): Promise<{ video: string[]; audio: string[] }> {
+    try {
+      const { spawn } = await import('child_process')
+      
+      return new Promise((resolve, reject) => {
+        const ffmpeg = spawn('ffmpeg', ['-f', 'avfoundation', '-list_devices', 'true', '-i', '""'])
+        
+        let output = ''
+        
+        ffmpeg.stderr.on('data', (data) => {
+          output += data.toString()
+        })
+        
+        ffmpeg.on('close', (code) => {
+          const videoDevices: string[] = []
+          const audioDevices: string[] = []
+          
+          // Parse FFmpeg output to extract device information
+          const lines = output.split('\n')
+          let inVideoSection = false
+          let inAudioSection = false
+          
+          for (const line of lines) {
+            if (line.includes('AVFoundation video devices:')) {
+              inVideoSection = true
+              inAudioSection = false
+              continue
+            }
+            if (line.includes('AVFoundation audio devices:')) {
+              inVideoSection = false
+              inAudioSection = true
+              continue
+            }
+            
+            if (inVideoSection && line.includes('[')) {
+              const match = line.match(/\[(\d+)\]\s+(.+)/)
+              if (match) {
+                videoDevices.push(match[2])
+              }
+            }
+            
+            if (inAudioSection && line.includes('[')) {
+              const match = line.match(/\[(\d+)\]\s+(.+)/)
+              if (match) {
+                audioDevices.push(match[2])
+              }
+            }
+          }
+          
+          resolve({ video: videoDevices, audio: audioDevices })
+        })
+        
+        ffmpeg.on('error', reject)
+      })
+    } catch (error) {
+      console.error('Error getting FFmpeg devices:', error)
+      return { video: [], audio: [] }
+    }
+  }
+
+  /**
    * Start recording with given settings
    */
   async startRecording(settings: RecordingSettings): Promise<{ success: boolean; error?: string }> {
@@ -176,9 +239,13 @@ export class RecordingService {
       console.log('📺 Using screen capture: 1:0')
     } else if (settings.sourceType === 'webcam') {
       args.push('-f', 'avfoundation')
-      const deviceId = settings.webcamDeviceId || '0'
-      args.push('-i', deviceId)
-      console.log('📹 Using webcam device:', deviceId)
+      // For webcam recording, we need to use the correct device index
+      // FFmpeg avfoundation uses: [video_device_index]:[audio_device_index]
+      // For webcam only recording, we use: [webcam_index]:[audio_index]
+      // Default webcam is usually index 0, audio is usually index 0
+      const deviceIndex = '0:0' // webcam:audio
+      args.push('-i', deviceIndex)
+      console.log('📹 Using webcam device index:', deviceIndex)
     }
 
     args.push(
