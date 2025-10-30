@@ -145,7 +145,8 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   console.log('RecordingModal: Current state:', {
     selectedSourceId,
     sources: sources.length,
-    selectedSourceState: selectedSourceState?.id
+    isRecording,
+    isPaused
   })
 
   return (
