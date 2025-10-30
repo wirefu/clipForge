@@ -148,6 +148,8 @@ export const useRecording = () => {
       
       // Start recording
       const chunks: Blob[] = []
+      const startTime = Date.now()
+      
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunks.push(event.data)
@@ -173,6 +175,15 @@ export const useRecording = () => {
       }
       
       mediaRecorder.start()
+      
+      // Start timer for webcam recording
+      const timerInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime
+        dispatch(updateProgress({ duration: elapsed }))
+      }, 100)
+      
+      // Store timer interval for cleanup
+      ;(window as any).currentTimerInterval = timerInterval
       
       // Store MediaRecorder for stopping
       ;(window as any).currentMediaRecorder = mediaRecorder
@@ -225,8 +236,15 @@ export const useRecording = () => {
         if (recordingState.sourceType === 'webcam') {
           // Stop webcam recording
           const mediaRecorder = (window as any).currentMediaRecorder
+          const timerInterval = (window as any).currentTimerInterval
+          
           if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop()
+          }
+          
+          if (timerInterval) {
+            clearInterval(timerInterval)
+            ;(window as any).currentTimerInterval = null
           }
         } else {
           // Stop screen recording
