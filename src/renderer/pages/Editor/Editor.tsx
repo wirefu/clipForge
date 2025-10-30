@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { MediaFile, TimelineClip } from '../../types'
 import { RootState } from '../../store'
 import { startExport, updateProgress, finishExport, cancelExport, setExportError } from '../../store/slices/export.slice'
+import { addClip, updateClip, selectClip, setPlayheadPosition } from '../../store/slices/timeline.slice'
 import MediaLibrary from '../../components/MediaLibrary/MediaLibrary'
 import VideoPreview from '../../components/VideoPreview/VideoPreview'
 import Timeline from '../../components/Timeline/Timeline'
@@ -14,16 +15,17 @@ import './Editor.css'
 function Editor() {
   const dispatch = useDispatch()
   const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null)
-  const [timelineClips, setTimelineClips] = useState<TimelineClip[]>([])
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
-  const [selectedClipId, setSelectedClipId] = useState<string | null>(null)
   const [showExportModal, setShowExportModal] = useState(false)
   const [showRecordingModal, setShowRecordingModal] = useState(false)
 
-  // Export state from Redux
+  // Redux state
   const exportState = useSelector((state: RootState) => state.export)
   const mediaFiles = useSelector((state: RootState) => state.mediaLibrary.mediaFiles)
+  const timelineState = useSelector((state: RootState) => state.timeline)
+  const timelineClips = timelineState.clips
+  const selectedClipId = timelineState.selectedClipId
 
   // Set up IPC listeners for export progress
   React.useEffect(() => {
@@ -62,31 +64,21 @@ function Editor() {
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time)
+    dispatch(setPlayheadPosition(time))
   }
 
   const handleAddClip = (clip: TimelineClip) => {
-    console.log('Editor: Adding clip to state:', clip)
-    setTimelineClips(prev => {
-      const newClips = [...prev, clip]
-      console.log('Editor: Updated clips array:', newClips)
-      console.log('Editor: New clips length:', newClips.length)
-      return newClips
-    })
+    console.log('Editor: Adding clip to Redux state:', clip)
+    dispatch(addClip(clip))
   }
 
   const handleUpdateClip = (clipId: string, updates: Partial<TimelineClip>) => {
-    console.log('Editor: Updating clip:', clipId, updates)
-    setTimelineClips(prev => {
-      const newClips = prev.map(clip => 
-        clip.id === clipId ? { ...clip, ...updates } : clip
-      )
-      console.log('Editor: Updated clips:', newClips)
-      return newClips
-    })
+    console.log('Editor: Updating clip in Redux:', clipId, updates)
+    dispatch(updateClip({ id: clipId, updates }))
   }
 
   const handleSelectClip = (clipId: string) => {
-    setSelectedClipId(clipId)
+    dispatch(selectClip(clipId))
   }
 
   const handlePlaybackEnd = () => {

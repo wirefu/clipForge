@@ -443,7 +443,11 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
             <div className="recording-in-progress">
               <div className="recording-status">
                 <h3>🎬 Recording in Progress</h3>
-                <p>Recording: {sources.find(s => s.id === selectedSourceId)?.name || 'Unknown'}</p>
+                <p>Recording: {
+                  recordingType === 'webcam' 
+                    ? webcamDevices.find(s => s.id === selectedWebcamId)?.name || 'Unknown'
+                    : sources.find(s => s.id === selectedSourceId)?.name || 'Unknown'
+                }</p>
                 <p>Resolution: {recordingSettings.resolution?.width}x{recordingSettings.resolution?.height}</p>
                 <p>Frame Rate: {recordingSettings.framerate} fps</p>
                 {recordingSettings.audioEnabled && <p>Audio: Enabled</p>}
