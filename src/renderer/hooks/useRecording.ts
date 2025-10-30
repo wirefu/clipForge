@@ -68,16 +68,37 @@ export const useRecording = () => {
     }
   }, [dispatch])
 
-  // Load webcam devices using unified desktopCapturer approach
+  // Load webcam devices using navigator.mediaDevices
   const loadWebcamDevices = useCallback(async () => {
     try {
-      console.log('Loading webcam devices using desktopCapturer...')
+      console.log('Loading webcam devices using navigator.mediaDevices...')
       
-      // Use the main process to get webcam devices via desktopCapturer
-      const webcamDevices = await window.electronAPI.recording.getWebcamDevices()
-      console.log('Found webcam devices:', webcamDevices)
+      // First, request permission to access camera
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        console.log('Got user media permission, stopping stream...')
+        stream.getTracks().forEach(track => track.stop())
+      } catch (permissionError) {
+        console.log('Permission denied or no webcam available:', permissionError)
+      }
       
-      dispatch(setWebcamDevices(webcamDevices))
+      // Now enumerate devices
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      console.log('All devices:', devices)
+      
+      const videoDevices = devices.filter(device => device.kind === 'videoinput')
+      console.log('Video devices:', videoDevices)
+      
+      const webcamSources = videoDevices.map((device, index) => ({
+        id: device.deviceId || `webcam-${index}`,
+        name: device.label || `Webcam ${index + 1}`,
+        type: 'webcam' as const,
+        isAvailable: true,
+        deviceId: device.deviceId
+      }))
+      
+      console.log('Found webcam devices:', webcamSources)
+      dispatch(setWebcamDevices(webcamSources))
     } catch (error) {
       console.error('Error loading webcam devices:', error)
       dispatch(setRecordingError('Failed to load webcam devices'))

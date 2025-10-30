@@ -11,24 +11,22 @@ export class RecordingService {
   private outputPath: string | null = null
 
   /**
-   * Get available screen, window, and webcam sources for recording
+   * Get available screen and window sources for recording
    */
   async getScreenSources(): Promise<RecordingSource[]> {
     try {
       const sources = await desktopCapturer.getSources({
-        types: ['screen', 'window', 'camera'],
+        types: ['screen', 'window'],
         thumbnailSize: { width: 150, height: 150 }
       })
 
       return sources.map((source, index) => {
-        let type: 'screen' | 'window' | 'webcam' = 'screen'
+        let type: 'screen' | 'window' = 'screen'
         
         if (source.id.startsWith('screen')) {
           type = 'screen'
         } else if (source.id.startsWith('window')) {
           type = 'window'
-        } else if (source.name.includes('Camera') || source.name.includes('FaceTime')) {
-          type = 'webcam'
         }
 
         return {
@@ -48,13 +46,13 @@ export class RecordingService {
   }
 
   /**
-   * Get available webcam devices (now handled by getScreenSources)
+   * Get available webcam devices (handled in renderer process)
    */
   async getWebcamDevices(): Promise<RecordingSource[]> {
     try {
-      // Get all sources and filter for webcams
-      const allSources = await this.getScreenSources()
-      return allSources.filter(source => source.type === 'webcam')
+      // Webcam devices are handled in renderer process using navigator.mediaDevices
+      // This is a placeholder - actual implementation is in useRecording hook
+      return []
     } catch (error) {
       console.error('Error getting webcam devices:', error)
       return []
@@ -238,36 +236,38 @@ export class RecordingService {
   }
 
   /**
-   * Get webcam device index for FFmpeg using desktopCapturer source
+   * Get webcam device index for FFmpeg using device ID mapping
    */
   private async getWebcamDeviceIndex(webcamDeviceId?: string): Promise<string> {
     try {
-      // Get all sources to find the webcam
-      const allSources = await this.getScreenSources()
-      const webcamSources = allSources.filter(source => source.type === 'webcam')
+      console.log('🔍 Getting webcam device index for deviceId:', webcamDeviceId)
       
-      console.log('🔍 Available webcam sources:', webcamSources.map(s => ({ id: s.id, name: s.name })))
+      // Get FFmpeg device list to find the correct index
+      const devices = await this.getFFmpegDevices()
+      console.log('🔍 Available FFmpeg video devices:', devices.video)
       
-      // Find the specific webcam source
-      let selectedSource = webcamSources[0] // Default to first webcam
+      // Map webcam device ID to FFmpeg device index
+      // For now, use a simple mapping - FaceTime HD Camera is usually at index 0
+      let videoIndex = 0
       
       if (webcamDeviceId) {
-        const found = webcamSources.find(source => source.id === webcamDeviceId)
-        if (found) {
-          selectedSource = found
+        // Try to find the device by name in FFmpeg device list
+        const deviceName = webcamDeviceId
+        const index = devices.video.findIndex(device => 
+          device.toLowerCase().includes('facetime') || 
+          device.toLowerCase().includes('camera') ||
+          device.toLowerCase().includes(deviceName.toLowerCase())
+        )
+        if (index !== -1) {
+          videoIndex = index
         }
       }
       
-      if (!selectedSource) {
-        console.error('❌ No webcam source found')
-        return '0:0' // Fallback
-      }
+      // Audio device is usually index 0 (MacBook Pro Microphone)
+      const audioIndex = 0
       
-      // For desktopCapturer webcam sources, we need to map to FFmpeg device index
-      // This is a simplified mapping - in practice, you might need more sophisticated detection
-      const deviceIndex = '0:0' // FaceTime HD Camera is usually at index 0
-      
-      console.log(`📹 Selected webcam: ${selectedSource.name} (using device index: ${deviceIndex})`)
+      const deviceIndex = `${videoIndex}:${audioIndex}`
+      console.log(`📹 Selected webcam device index: ${deviceIndex} (video: ${devices.video[videoIndex]})`)
       
       return deviceIndex
     } catch (error) {
@@ -332,4 +332,5 @@ export class RecordingService {
 
 // Export singleton instance
 export const recordingService = new RecordingService()
+
 
