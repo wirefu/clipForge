@@ -58,8 +58,11 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         audioEnabled: true,
         quality: 'medium'
       })
-      
-      // Debug webcam devices
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (isOpen) {
       console.log('RecordingModal opened, webcamDevices:', webcamDevices)
     }
   }, [isOpen, webcamDevices])
@@ -246,22 +249,31 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                 <div className="recording-section">
                   <h3>Webcam Device</h3>
                   <div className="webcam-selection">
-                    <select
-                      value={selectedWebcamId}
-                      onChange={(e) => handleWebcamSelect(e.target.value)}
-                      className="webcam-select"
-                    >
-                      <option value="">Select a webcam device...</option>
-                      {webcamDevices.length > 0 ? (
-                        webcamDevices.map((device) => (
-                          <option key={device.id} value={device.id}>
-                            {device.name}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>No webcam devices found</option>
-                      )}
-                    </select>
+                    <div className="webcam-controls">
+                      <select
+                        value={selectedWebcamId}
+                        onChange={(e) => handleWebcamSelect(e.target.value)}
+                        className="webcam-select"
+                      >
+                        <option value="">Select a webcam device...</option>
+                        {webcamDevices.length > 0 ? (
+                          webcamDevices.map((device) => (
+                            <option key={device.id} value={device.id}>
+                              {device.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>No webcam devices found</option>
+                        )}
+                      </select>
+                      <button
+                        onClick={() => recordingHook.refreshSources()}
+                        className="btn btn-secondary"
+                        style={{ padding: '8px 12px', fontSize: '12px' }}
+                      >
+                        🔄 Refresh
+                      </button>
+                    </div>
                     <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
                       Found {webcamDevices.length} webcam device(s)
                     </div>

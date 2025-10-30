@@ -211,6 +211,16 @@
   gap: 16px;
 }
 
+.webcam-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.webcam-controls .webcam-select {
+  flex: 1;
+}
+
 .webcam-select {
   background: #2a2a2a;
   border: 1px solid #444;

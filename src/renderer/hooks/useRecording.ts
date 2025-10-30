@@ -65,9 +65,23 @@ export const useRecording = () => {
   // Load webcam devices
   const loadWebcamDevices = useCallback(async () => {
     try {
-      // Enumerate webcam devices directly in renderer process
+      console.log('Loading webcam devices...')
+      
+      // First, try to get user media to request permission
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        console.log('Got user media permission, stopping stream...')
+        stream.getTracks().forEach(track => track.stop())
+      } catch (permissionError) {
+        console.log('Permission denied or no webcam available:', permissionError)
+      }
+      
+      // Now enumerate devices
       const devices = await navigator.mediaDevices.enumerateDevices()
+      console.log('All devices:', devices)
+      
       const videoDevices = devices.filter(device => device.kind === 'videoinput')
+      console.log('Video devices:', videoDevices)
       
       const webcamSources = videoDevices.map((device, index) => ({
         id: device.deviceId || `webcam-${index}`,
