@@ -118,17 +118,6 @@ function Toolbar({ isPlaying, onPlayPause, currentTime, onExport, canExport = fa
         >
           📤 {canExport ? '✓' : '✗'}
         </button>
-        <div style={{ 
-          position: 'absolute', 
-          top: '50px', 
-          right: '10px', 
-          background: 'red', 
-          color: 'white', 
-          padding: '5px',
-          zIndex: 10000
-        }}>
-          DEBUG: canExport={canExport ? 'true' : 'false'}
-        </div>
       </div>
     </div>
   )
