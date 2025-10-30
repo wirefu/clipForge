@@ -34,7 +34,9 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
     if (!isDragging || !clipRef.current) return
 
     const deltaX = e.clientX - dragStart.x
-    const deltaTime = (deltaX / timelineWidth) * 100 // Convert to percentage of timeline
+    // Calculate total duration for proper time conversion
+    const totalDuration = Math.max(60, clip.start + clip.duration + 20) // Estimate total duration
+    const deltaTime = (deltaX / timelineWidth) * totalDuration // Convert to actual time
 
     if (isDragging === 'left') {
       // Dragging left handle (trim start)
@@ -46,7 +48,7 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
       onUpdateClip(clip.id, { trimEnd: Math.min(newTrimEnd, clip.duration) })
     } else if (isDragging === 'center') {
       // Dragging entire clip
-      const newStart = Math.max(0, Math.min(clip.start + deltaTime, 100 - clip.duration))
+      const newStart = Math.max(0, Math.min(clip.start + deltaTime, totalDuration - clip.duration))
       onUpdateClip(clip.id, { start: newStart })
     }
   }, [isDragging, dragStart, timelineWidth, clip.id, clip.trimEnd, clip.trimStart, clip.duration, clip.start, onUpdateClip])
@@ -72,9 +74,12 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
   const trimEndPercentage = getTrimEndPercentage(clip)
   
 
-  // Calculate visual positions
-  const clipLeft = clip.start
-  const clipWidth = clip.duration
+  // Calculate total duration for positioning
+  const totalDuration = Math.max(60, clip.start + clip.duration + 20)
+  
+  // Calculate visual positions (convert time to percentage)
+  const clipLeft = (clip.start / totalDuration) * 100
+  const clipWidth = (clip.duration / totalDuration) * 100
   const trimmedLeft = clipLeft + (clipWidth * trimStartPercentage)
   const trimmedWidth = clipWidth * (trimmedDuration / clip.duration)
 
