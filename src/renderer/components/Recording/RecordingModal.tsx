@@ -14,6 +14,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   isOpen,
   onClose
 }) => {
+  const recordingHook = useRecording()
   const {
     isRecording,
     isPaused,
@@ -28,7 +29,11 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     resumeRecording,
     setSelectedSource,
     selectRecordingOutputDir
-  } = useRecording()
+  } = recordingHook
+
+  // Debug: Log the entire hook result
+  console.log('RecordingModal: useRecording hook result:', recordingHook)
+  console.log('RecordingModal: selectedSourceId from hook:', selectedSourceId)
 
   const [selectedSource, setSelectedSourceState] = useState<RecordingSource | null>(null)
   const [recordingSettings, setRecordingSettings] = useState<Partial<RecordingSettings>>({
