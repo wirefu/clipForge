@@ -70,25 +70,18 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
 
       const media = JSON.parse(mediaData)
       
-      // Calculate total duration for positioning
-      const maxClipEnd = clips.reduce((max, clip) => {
-        const clipEnd = clip.start + clip.duration
-        return Math.max(max, clipEnd)
-      }, 0)
-      const totalDuration = Math.max(60, maxClipEnd + 20)
-      
       // Calculate drop position
       const rect = timelineRef.current.getBoundingClientRect()
       const dropX = e.clientX - rect.left
       const timelineWidth = rect.width
-      const dropTime = (dropX / timelineWidth) * totalDuration // Convert to actual time
+      const dropTime = (dropX / timelineWidth) * 100 // Convert to percentage
 
       // Create a new timeline clip
       const newClip: import('../../types').TimelineClip = {
         id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         mediaFileId: media.id,
         trackId: 'track-1', // Default to first track
-        start: Math.max(0, Math.min(dropTime, totalDuration - (media.duration || 10))),
+        start: Math.max(0, Math.min(dropTime, 100 - (media.duration || 10))),
         duration: media.duration || 10,
         trimStart: 0,
         trimEnd: media.duration || 10,
@@ -110,15 +103,8 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
 
   const generateTimeMarkers = () => {
     const markers = []
-    // Calculate total duration based on clips
-    const maxClipEnd = clips.reduce((max, clip) => {
-      const clipEnd = clip.start + clip.duration
-      return Math.max(max, clipEnd)
-    }, 0)
-    
-    // Add some padding and ensure minimum duration
-    const totalDuration = Math.max(60, maxClipEnd + 20) // At least 60 seconds, add 20s padding
-    const interval = totalDuration > 120 ? 20 : 10 // Every 10s for short timelines, 20s for long ones
+    const totalDuration = 100 // Assuming 100 seconds for demo
+    const interval = 10 // Every 10 seconds
     
     for (let i = 0; i <= totalDuration; i += interval) {
       markers.push({
