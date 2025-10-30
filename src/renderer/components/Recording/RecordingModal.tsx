@@ -260,7 +260,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                 <button
                   className="btn btn-primary start-btn"
                   onClick={handleStartRecording}
-                  disabled={!selectedSource}
+                  disabled={!selectedSourceId}
                 >
                   🎬 Start Recording
                 </button>
