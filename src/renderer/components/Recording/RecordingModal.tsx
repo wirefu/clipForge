@@ -143,8 +143,9 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
 
   if (!isOpen) return null
 
-
-  return (
+  // Add error boundary for debugging
+  try {
+    return (
     <div className="recording-modal-overlay">
       <div className="recording-modal">
         <div className="recording-modal-header">
@@ -308,4 +309,20 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       )}
     </div>
   )
+  } catch (error) {
+    console.error('RecordingModal render error:', error)
+    return (
+      <div className="recording-modal-overlay">
+        <div className="recording-modal">
+          <div className="recording-modal-header">
+            <h2>Screen Recording</h2>
+            <button className="close-btn" onClick={onClose}>✕</button>
+          </div>
+          <div className="error-message">
+            ❌ Error loading recording modal: {error instanceof Error ? error.message : 'Unknown error'}
+          </div>
+        </div>
+      </div>
+    )
+  }
 }
