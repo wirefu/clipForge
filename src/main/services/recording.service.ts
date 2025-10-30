@@ -248,11 +248,21 @@ export class RecordingService {
       console.log('📹 Using webcam device index:', deviceIndex)
     }
 
-    args.push(
-      '-r', settings.framerate.toString(),
-      '-b:v', `${settings.bitrate}k`,
-      '-pix_fmt', 'yuv420p'
-    )
+    // For webcam recording, use supported resolution and frame rate
+    if (settings.sourceType === 'webcam') {
+      args.push(
+        '-s', '1280x720',  // Use 720p instead of 1080p
+        '-r', '30',        // Use exact 30fps instead of 29.97
+        '-b:v', `${settings.bitrate}k`,
+        '-pix_fmt', 'yuv420p'
+      )
+    } else {
+      args.push(
+        '-r', settings.framerate.toString(),
+        '-b:v', `${settings.bitrate}k`,
+        '-pix_fmt', 'yuv420p'
+      )
+    }
 
     if (settings.audioEnabled) {
       args.push('-b:a', '128k')
