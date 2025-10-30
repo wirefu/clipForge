@@ -27,28 +27,6 @@ function Editor() {
   const timelineClips = timelineState.clips
   const selectedClipId = timelineState.selectedClipId
 
-  // Debug logging
-  console.log('Editor: Timeline state:', timelineState)
-  console.log('Editor: Timeline clips:', timelineClips)
-  console.log('Editor: Selected clip ID:', selectedClipId)
-  
-  // Test Redux store connection
-  React.useEffect(() => {
-    console.log('Editor: Testing Redux store connection...')
-    const testClip: TimelineClip = {
-      id: 'test-clip-' + Date.now(),
-      mediaFileId: 'test-media',
-      trackId: 'track-1',
-      start: 0,
-      duration: 10,
-      trimStart: 0,
-      trimEnd: 10,
-      volume: 1,
-      muted: false
-    }
-    console.log('Editor: Dispatching test clip:', testClip)
-    dispatch(addClip(testClip))
-  }, [dispatch])
 
   // Set up IPC listeners for export progress
   React.useEffect(() => {
@@ -91,14 +69,10 @@ function Editor() {
   }
 
   const handleAddClip = (clip: TimelineClip) => {
-    console.log('Editor: Adding clip to Redux state:', clip)
-    console.log('Editor: Current timeline clips before add:', timelineClips)
     dispatch(addClip(clip))
-    console.log('Editor: Dispatched addClip action')
   }
 
   const handleUpdateClip = (clipId: string, updates: Partial<TimelineClip>) => {
-    console.log('Editor: Updating clip in Redux:', clipId, updates)
     dispatch(updateClip({ id: clipId, updates }))
   }
 
@@ -163,8 +137,6 @@ function Editor() {
   const trimEnd = selectedClip?.trimEnd || selectedMedia?.duration || 0
   const clipStart = selectedClip?.start || 0
   
-  console.log('Editor: Selected clip:', selectedClip)
-  console.log('Editor: Trim points:', { trimStart, trimEnd, clipStart, selectedClipId })
 
   return (
     <div className="editor">
