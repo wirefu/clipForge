@@ -19,26 +19,38 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
 
   // Find the active clip at the current timeline time
   const findActiveClip = useCallback((time: number): { clip: TimelineClip; media: MediaFile; videoTime: number } | null => {
+    if (clips.length === 0) return null
+    
     // Sort clips by start time to find the one active at current time
     const sortedClips = [...clips].sort((a, b) => a.start - b.start)
     
+    // Find the last clip whose start time is <= current time
+    let activeClip: TimelineClip | null = null
     for (const clip of sortedClips) {
-      const clipStart = clip.start
-      const clipEnd = clip.start + clip.duration
+      if (time >= clip.start) {
+        activeClip = clip
+      } else {
+        break
+      }
+    }
+    
+    if (!activeClip) return null
+    
+    const clipStart = activeClip.start
+    const clipEnd = activeClip.start + activeClip.duration
+    
+    // Check if current time is within this clip's timeline range
+    if (time >= clipStart && time <= clipEnd) {
+      const media = mediaFiles.find(m => m.id === activeClip.mediaFileId)
+      if (!media) return null
       
-      // Check if current time is within this clip's timeline range
-      if (time >= clipStart && time < clipEnd) {
-        const media = mediaFiles.find(m => m.id === clip.mediaFileId)
-        if (!media) continue
-        
-        // Calculate video time: timeline time - clip start + trim start
-        const relativeTime = time - clipStart
-        const videoTime = clip.trimStart + relativeTime
-        
-        // Check if video time is within trimmed range
-        if (videoTime >= clip.trimStart && videoTime < clip.trimEnd) {
-          return { clip, media, videoTime }
-        }
+      // Calculate video time: timeline time - clip start + trim start
+      const relativeTime = time - clipStart
+      const videoTime = activeClip.trimStart + relativeTime
+      
+      // Check if video time is within trimmed range (allow slight overflow for smooth transitions)
+      if (videoTime >= activeClip.trimStart && videoTime <= activeClip.trimEnd + 0.1) {
+        return { clip: activeClip, media, videoTime: Math.min(videoTime, activeClip.trimEnd) }
       }
     }
     
@@ -49,8 +61,19 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
   useEffect(() => {
     const active = findActiveClip(currentTime)
     if (active) {
-      setActiveClip(active.clip)
-      setActiveMedia(active.media)
+      // Only update if it's actually a different clip to avoid unnecessary re-renders
+      setActiveClip(prevClip => {
+        if (prevClip?.id !== active.clip.id) {
+          return active.clip
+        }
+        return prevClip
+      })
+      setActiveMedia(prevMedia => {
+        if (prevMedia?.id !== active.media.id) {
+          return active.media
+        }
+        return prevMedia
+      })
     } else {
       setActiveClip(null)
       setActiveMedia(null)
@@ -118,50 +141,88 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
       const relativeTime = videoTime - activeClip.trimStart
       const timelineTime = activeClip.start + relativeTime
       
-      // Check if we've exceeded trim end
-      if (videoTime >= activeClip.trimEnd) {
+      // Check if we've reached the end of this clip's trimmed duration
+      const trimmedDuration = activeClip.trimEnd - activeClip.trimStart
+      if (relativeTime >= trimmedDuration) {
         // Move to next clip
         const sortedClips = [...clips].sort((a, b) => a.start - b.start)
         const currentIndex = sortedClips.findIndex(c => c.id === activeClip.id)
         const nextClip = sortedClips[currentIndex + 1]
         
         if (nextClip) {
+          // Move playhead to next clip start
           onTimeUpdate(nextClip.start)
+          return
         } else {
+          // End of timeline - pause and set playhead to end
           video.pause()
           const clipEnd = activeClip.start + activeClip.duration
           onTimeUpdate(clipEnd)
           onPlaybackEnd?.()
+          return
         }
-        return
       }
       
-      // Check if we've reached the end of this clip's timeline range
-      const clipEnd = activeClip.start + activeClip.duration
-      if (timelineTime >= clipEnd) {
-        // Move to next clip or pause at end
+      // Check if we've exceeded trim end (safety check)
+      if (videoTime >= activeClip.trimEnd) {
         const sortedClips = [...clips].sort((a, b) => a.start - b.start)
         const currentIndex = sortedClips.findIndex(c => c.id === activeClip.id)
         const nextClip = sortedClips[currentIndex + 1]
         
         if (nextClip) {
           onTimeUpdate(nextClip.start)
+          return
+        } else {
+          video.pause()
+          const clipEnd = activeClip.start + activeClip.duration
+          onTimeUpdate(clipEnd)
+          onPlaybackEnd?.()
+          return
+        }
+      }
+      
+      // Check if we've reached the end of this clip's timeline range
+      const clipEnd = activeClip.start + activeClip.duration
+      if (timelineTime >= clipEnd - 0.1) { // Small tolerance for rounding
+        const sortedClips = [...clips].sort((a, b) => a.start - b.start)
+        const currentIndex = sortedClips.findIndex(c => c.id === activeClip.id)
+        const nextClip = sortedClips[currentIndex + 1]
+        
+        if (nextClip) {
+          onTimeUpdate(nextClip.start)
+          return
         } else {
           video.pause()
           onTimeUpdate(clipEnd)
           onPlaybackEnd?.()
+          return
         }
-        return
       }
       
+      // Normal playback - update timeline
       onTimeUpdate(timelineTime)
     }
 
     const handleLoadedMetadata = () => {
       // Set initial video time based on current timeline time
       const active = findActiveClip(currentTime)
-      if (active) {
+      if (active && active.clip.id === activeClip.id) {
         video.currentTime = Math.max(activeClip.trimStart, Math.min(active.videoTime, activeClip.trimEnd))
+      }
+    }
+
+    const handleEnded = () => {
+      // Video ended - move to next clip
+      const sortedClips = [...clips].sort((a, b) => a.start - b.start)
+      const currentIndex = sortedClips.findIndex(c => c.id === activeClip.id)
+      const nextClip = sortedClips[currentIndex + 1]
+      
+      if (nextClip) {
+        onTimeUpdate(nextClip.start)
+      } else {
+        const clipEnd = activeClip.start + activeClip.duration
+        onTimeUpdate(clipEnd)
+        onPlaybackEnd?.()
       }
     }
 
@@ -171,14 +232,16 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
 
     video.addEventListener('loadedmetadata', handleLoadedMetadata)
     video.addEventListener('timeupdate', handleTimeUpdate)
+    video.addEventListener('ended', handleEnded)
     video.addEventListener('error', handleError)
 
     return () => {
       video.removeEventListener('loadedmetadata', handleLoadedMetadata)
       video.removeEventListener('timeupdate', handleTimeUpdate)
+      video.removeEventListener('ended', handleEnded)
       video.removeEventListener('error', handleError)
     }
-  }, [activeClip, activeMedia, isSeeking, clips, currentTime, findActiveClip, onTimeUpdate, onPlaybackEnd])
+  }, [activeClip, activeMedia, isPlaying, isSeeking, clips, currentTime, findActiveClip, onTimeUpdate, onPlaybackEnd])
 
   // Handle scrubbing (when playhead is dragged)
   useEffect(() => {
