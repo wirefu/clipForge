@@ -395,30 +395,13 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                 <button
                   className="btn btn-primary start-btn"
                   onClick={handleStartRecording}
-                  disabled={
-                    (recordingType === 'screen' && !selectedSourceId) ||
-                    (recordingType === 'webcam' && !selectedWebcamId) ||
-                    (recordingType === 'both' && (!selectedSourceId || !selectedWebcamId))
-                  }
+                  disabled={!selectedSourceId}
                   style={{ 
-                    backgroundColor: (
-                      (recordingType === 'screen' && selectedSourceId) ||
-                      (recordingType === 'webcam' && selectedWebcamId) ||
-                      (recordingType === 'both' && selectedSourceId && selectedWebcamId)
-                    ) ? '#007acc' : '#555',
-                    opacity: (
-                      (recordingType === 'screen' && selectedSourceId) ||
-                      (recordingType === 'webcam' && selectedWebcamId) ||
-                      (recordingType === 'both' && selectedSourceId && selectedWebcamId)
-                    ) ? 1 : 0.6 
+                    backgroundColor: selectedSourceId ? '#007acc' : '#555',
+                    opacity: selectedSourceId ? 1 : 0.6 
                   }}
                 >
-                  🎬 Start Recording {
-                    (recordingType === 'screen' && selectedSourceId) ||
-                    (recordingType === 'webcam' && selectedWebcamId) ||
-                    (recordingType === 'both' && selectedSourceId && selectedWebcamId)
-                      ? '✓' : '✗'
-                  }
+                  🎬 Start Recording {selectedSourceId ? '✓' : '✗'}
                 </button>
                 <button
                   className="btn btn-secondary"
