@@ -8,7 +8,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "test": "vitest",
-    "test:ui": "vitest --ui",
+    "test:ui": "vitest ui",
     "test:run": "vitest run",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",

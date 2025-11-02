@@ -170,6 +170,7 @@ declare global {
     electronAPI: {
       file: {
         import: () => Promise<ImportResult>
+        importByPath: (filePath: string) => Promise<ImportResult>
         export: (settings: ExportSettings) => Promise<string | null>
         saveProject: (project: ProjectData) => Promise<string | null>
         loadProject: () => Promise<ProjectData | null>

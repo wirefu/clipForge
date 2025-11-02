@@ -1,12 +1,33 @@
+import { spawn, execSync } from 'child_process'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { app } from 'electron'
 
-// Set FFmpeg path
-ffmpeg.setFfprobePath(ffmpegInstaller.path)
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
+// Set FFmpeg/FFprobe paths
+// Note: @ffmpeg-installer/ffmpeg only provides ffmpeg binary, not ffprobe
+// We need to find ffprobe separately (system-installed or bundled)
+const ffmpegPath = ffmpegInstaller.path
+
+// Find ffprobe - try system PATH first, then check same directory as ffmpeg
+let ffprobePath: string
+try {
+  ffprobePath = execSync('which ffprobe', { encoding: 'utf8' }).trim()
+} catch {
+  // If not in PATH, check if it exists in the same directory as ffmpeg
+  const dir = path.dirname(ffmpegPath)
+  const potentialFfprobePath = path.join(dir, 'ffprobe')
+  if (require('fs').existsSync(potentialFfprobePath)) {
+    ffprobePath = potentialFfprobePath
+  } else {
+    // Fallback to assuming it's in PATH (will throw if not)
+    ffprobePath = 'ffprobe'
+  }
+}
+
+ffmpeg.setFfprobePath(ffprobePath)
+ffmpeg.setFfmpegPath(ffmpegPath)
 
 export interface ThumbnailOptions {
   width?: number
@@ -175,13 +196,44 @@ export class ThumbnailService {
    */
   private async getVideoDuration(videoPath: string): Promise<number | null> {
     return new Promise((resolve) => {
-      ffmpeg.ffprobe(videoPath, (err, metadata) => {
-        if (err) {
-          console.error('Failed to get video duration:', err)
+      // Call ffprobe directly (not ffmpeg!)
+      const ffprobeProcess = spawn(ffprobePath, [
+        '-v', 'error',
+        '-show_format',
+        '-of', 'json',
+        videoPath
+      ])
+      
+      let stdout = ''
+      let stderr = ''
+      
+      ffprobeProcess.stdout.on('data', (data) => {
+        stdout += data.toString()
+      })
+      
+      ffprobeProcess.stderr.on('data', (data) => {
+        stderr += data.toString()
+      })
+      
+      ffprobeProcess.on('error', (err) => {
+        console.error('Failed to get video duration:', err)
+        resolve(null)
+      })
+      
+      ffprobeProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error('FFprobe exited with code:', code, 'stderr:', stderr)
           resolve(null)
-        } else {
-          const duration = metadata.format.duration
-          resolve(duration || null)
+          return
+        }
+        
+        try {
+          const metadata = JSON.parse(stdout)
+          const duration = metadata.format?.duration ? parseFloat(metadata.format.duration) : null
+          resolve(duration)
+        } catch (parseError) {
+          console.error('Failed to parse ffprobe output:', parseError)
+          resolve(null)
         }
       })
     })

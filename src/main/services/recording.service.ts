@@ -236,8 +236,10 @@ export class RecordingService {
       }
 
       // Send 'q' to FFmpeg to quit gracefully
+      // This signals FFmpeg to stop recording and finalize the file
       try {
         this.recordingProcess.stdin?.write('q\n')
+        console.log('🛑 [Recording] Sent quit signal to FFmpeg')
       } catch (error: any) {
         // Ignore EPIPE errors when stdin is closed
         if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
@@ -245,11 +247,30 @@ export class RecordingService {
         }
       }
       
-      // Wait for process to exit
+      // Wait for process to exit - FFmpeg needs time to finalize the file
       await new Promise((resolve) => {
-        this.recordingProcess?.on('exit', resolve)
-        setTimeout(resolve, 5000) // Timeout after 5 seconds
+        const timeout = setTimeout(() => {
+          console.warn('⚠️ [Recording] FFmpeg exit timeout - process may still be writing')
+          resolve(null)
+        }, 10000) // Increased timeout to 10 seconds
+        
+        this.recordingProcess?.on('exit', (code, signal) => {
+          clearTimeout(timeout)
+          console.log('✅ [Recording] FFmpeg exited:', { code, signal, outputPath: this.outputPath })
+          resolve(null)
+        })
+        
+        // Also listen for close event as fallback
+        this.recordingProcess?.on('close', (code, signal) => {
+          clearTimeout(timeout)
+          console.log('✅ [Recording] FFmpeg closed:', { code, signal })
+          resolve(null)
+        })
       })
+      
+      // Additional wait to ensure file is flushed to disk
+      console.log('⏳ [Recording] Waiting for file to be finalized...')
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       // Remove all remaining listeners
       this.recordingProcess.removeAllListeners()

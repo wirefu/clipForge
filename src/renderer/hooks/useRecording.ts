@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { RootState } from '../store'
+import { RootState, store } from '../store'
 import {
   setSources,
   setSelectedSource,
@@ -14,7 +14,10 @@ import {
   updateRecordingSettings,
   setOutputPath
 } from '../store/slices/recording.slice'
+import { addClip } from '../store/slices/timeline.slice'
+import { addMediaFile } from '../store/slices/mediaLibrary.slice'
 import { RecordingSettings, RecordingSource } from '../types/recording.types'
+import { TimelineClip } from '../types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
 export const useRecording = () => {
@@ -128,6 +131,55 @@ export const useRecording = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]) // Remove recordingState.sources from deps to prevent infinite loop
+
+  // Helper function to add a recording to timeline
+  const addRecordingToTimeline = useCallback(async (mediaFile: any) => {
+    // First, add the media file to the media library so it's available for playback
+    // Check if it's already in the library to avoid duplicates
+    const currentMediaLibrary = store.getState().mediaLibrary
+    const existingFile = currentMediaLibrary.mediaFiles.find(f => f.id === mediaFile.id || f.path === mediaFile.path)
+    if (!existingFile) {
+      dispatch(addMediaFile(mediaFile))
+    }
+    
+    // Get latest timeline state to avoid stale closures
+    const currentTimelineState = store.getState().timeline
+    const tracks = currentTimelineState.tracks
+    const firstVideoTrack = tracks.find(track => track.type === 'video') || tracks[0]
+    
+    if (firstVideoTrack) {
+      // Calculate start position at the end of existing clips on this track
+      const clipsOnTrack = currentTimelineState.clips.filter(clip => clip.trackId === firstVideoTrack.id)
+      const endPosition = clipsOnTrack.length > 0
+        ? Math.max(...clipsOnTrack.map(clip => clip.start + clip.duration))
+        : 0
+      
+      // Create timeline clip
+      const newClip: TimelineClip = {
+        id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        mediaFileId: mediaFile.id,
+        trackId: firstVideoTrack.id,
+        start: endPosition,
+        duration: mediaFile.duration,
+        trimStart: 0,
+        trimEnd: mediaFile.duration,
+        volume: 1,
+        muted: false
+      }
+      
+      dispatch(addClip(newClip))
+      console.log('✅ Recording added to timeline and media library:', {
+        clipId: newClip.id,
+        mediaFileId: newClip.mediaFileId,
+        mediaPath: mediaFile.path,
+        trackId: newClip.trackId,
+        start: newClip.start,
+        duration: newClip.duration,
+        trimStart: newClip.trimStart,
+        trimEnd: newClip.trimEnd
+      })
+    }
+  }, [dispatch])
 
   // Load webcam devices
   const loadWebcamDevices = useCallback(async () => {
@@ -604,10 +656,33 @@ export const useRecording = () => {
             console.log('✅ File saved successfully:', result.outputPath)
             dispatch(setOutputPath(result.outputPath))
             
-            // Auto-import to media library
+            // Auto-import to media library and add to timeline
             try {
-              await window.electronAPI.file.importByPath(result.outputPath)
-              console.log('✅ File imported to media library')
+              const importResult = await (window.electronAPI.file as any).importByPath(result.outputPath)
+              
+              if (importResult.success && importResult.file) {
+                console.log('✅ File imported to media library:', importResult.file)
+                
+                // Verify duration was detected - if not, the file might not be ready yet
+                const mediaFile = importResult.file
+                if (mediaFile.duration === 0) {
+                  console.warn('⚠️ MediaFile duration is 0 - file might not be fully written yet. Waiting and retrying...')
+                  // Wait a bit more and retry
+                  await new Promise(resolve => setTimeout(resolve, 1000))
+                  const retryResult = await (window.electronAPI.file as any).importByPath(result.outputPath)
+                  if (retryResult.success && retryResult.file && retryResult.file.duration > 0) {
+                    console.log('✅ Duration detected on retry:', retryResult.file.duration)
+                    await addRecordingToTimeline(retryResult.file)
+                  } else {
+                    console.error('❌ Duration still 0 after retry - file may be corrupted or incomplete')
+                  }
+                } else {
+                  // Duration is valid, add to timeline
+                  await addRecordingToTimeline(mediaFile)
+                }
+              } else {
+                console.error('❌ Import failed:', importResult.error)
+              }
             } catch (importError) {
               console.error('❌ Error auto-importing webcam recording:', importError)
             }
@@ -816,6 +891,64 @@ export const useRecording = () => {
             dispatch(stopRecording())
             if (result.outputPath) {
               dispatch(setOutputPath(result.outputPath))
+              
+              // Wait for the file to be fully written before importing
+              // FFmpeg may need time to flush and finalize the file
+              console.log('⏳ Waiting for file to be fully written before importing...')
+              await new Promise(resolve => setTimeout(resolve, 2000))
+              
+              // Auto-import to media library and add to timeline with retry logic
+              let mediaFile = null
+              const maxRetries = 5
+              const retryDelays = [1000, 2000, 3000, 5000, 5000] // Increasing delays
+              
+              for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                  const importResult = await (window.electronAPI.file as any).importByPath(result.outputPath)
+                  
+                  if (importResult.success && importResult.file) {
+                    const importedFile = importResult.file
+                    console.log(`📦 Import attempt ${attempt + 1}/${maxRetries + 1}:`, {
+                      id: importedFile.id,
+                      name: importedFile.name,
+                      path: importedFile.path,
+                      duration: importedFile.duration,
+                      type: importedFile.type,
+                      size: importedFile.size
+                    })
+                    
+                    if (importedFile.duration > 0) {
+                      console.log(`✅ Duration detected (${importedFile.duration}s) on attempt ${attempt + 1}`)
+                      mediaFile = importedFile
+                      break
+                    } else if (attempt < maxRetries) {
+                      const delay = retryDelays[attempt] || 5000
+                      console.warn(`⚠️ Duration is 0 on attempt ${attempt + 1}. Waiting ${delay}ms before retry...`)
+                      await new Promise(resolve => setTimeout(resolve, delay))
+                    } else {
+                      console.error('❌ Duration still 0 after all retries - file may be corrupted or incomplete')
+                      mediaFile = importedFile // Use it anyway, user can manually verify
+                    }
+                  } else {
+                    console.error(`❌ Import failed on attempt ${attempt + 1}:`, importResult.error)
+                    if (attempt < maxRetries) {
+                      await new Promise(resolve => setTimeout(resolve, retryDelays[attempt] || 5000))
+                    }
+                  }
+                } catch (importError) {
+                  console.error(`❌ Error importing on attempt ${attempt + 1}:`, importError)
+                  if (attempt < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, retryDelays[attempt] || 5000))
+                  }
+                }
+              }
+              
+              // Add to timeline if we got a valid file
+              if (mediaFile) {
+                await addRecordingToTimeline(mediaFile)
+              } else {
+                console.error('❌ Failed to import file after all retries')
+              }
             }
           } else {
             dispatch(setRecordingError(result.error || 'Failed to stop recording'))
@@ -826,7 +959,7 @@ export const useRecording = () => {
       console.error('Error stopping recording:', error)
       dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to stop recording'))
     }
-  }, [dispatch, recordingState.isRecording, recordingState.settings])
+  }, [dispatch, recordingState.isRecording, recordingState.settings, addRecordingToTimeline])
 
   // Pause recording
   const handlePauseRecording = useCallback(async () => {
