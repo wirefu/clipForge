@@ -257,9 +257,27 @@ export const useRecording = () => {
       
       // CRITICAL: Ensure we're requesting video from camera (videoinput), NOT screen capture
       // Use standard getUserMedia() for webcam - NO desktopCapturer
+      // In Electron, we MUST explicitly request videoinput (camera) and NOT allow screen capture
       console.log('Requesting camera stream with constraints:', JSON.stringify(videoConstraints, null, 2))
+      
+      // CRITICAL: Ensure video constraints specify we want camera (videoinput), not screen
+      // Do NOT use facingMode - it might conflict with deviceId
+      // Instead, rely on deviceId to ensure we get the specific camera
+      const finalVideoConstraints: MediaTrackConstraints = {
+        ...videoConstraints
+      }
+      
+      // Make absolutely sure we have deviceId constraint
+      if (!finalVideoConstraints.deviceId) {
+        console.error('❌ ERROR: No deviceId constraint! This could cause getUserMedia to select screen!')
+        throw new Error('No valid camera device ID found. Cannot proceed without deviceId constraint.')
+      }
+      
+      console.log('Final video constraints (with deviceId):', JSON.stringify(finalVideoConstraints, null, 2))
+      console.log('⚠️ CRITICAL: deviceId constraint is set to:', finalVideoConstraints.deviceId)
+      
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: videoConstraints,
+        video: finalVideoConstraints,
         audio: settings.audioEnabled ? {
           echoCancellation: true,
           noiseSuppression: true
@@ -394,41 +412,59 @@ export const useRecording = () => {
       mediaRecorder.onstop = async () => {
         // IMPORTANT: Stop the camera stream FIRST before processing blob
         // This ensures the camera turns off immediately after recording stops
+        console.log('🛑 MediaRecorder stopped. Processing recorded data...')
+        console.log('📦 Chunks received:', chunks.length, 'Total size:', chunks.reduce((sum, chunk) => sum + chunk.size, 0), 'bytes')
+        
         if (stream) {
+          console.log('🔄 Stopping camera stream tracks...')
           stream.getTracks().forEach(track => {
-            track.stop()
             console.log('Stopped track:', track.kind, track.label)
+            track.stop()
           })
         }
         
         const blob = new Blob(chunks, { type: 'video/webm' })
+        console.log('📹 Created blob from chunks:', {
+          blobSize: blob.size,
+          blobType: blob.type,
+          chunksCount: chunks.length
+        })
         
         if (blob.size > 0) {
           try {
             // Convert blob to buffer
+            console.log('📤 Converting blob to buffer for saving...')
             const arrayBuffer = await blob.arrayBuffer()
             const buffer = Buffer.from(arrayBuffer)
+            console.log('✅ Buffer created, size:', buffer.length, 'bytes')
             
             // Save to file system using Electron API
+            console.log('💾 Saving recording to:', outputPath)
             const result = await window.electronAPI.recording.saveWebcamRecording({
               buffer,
               filePath: outputPath
             })
             
             if (result.success && result.outputPath) {
+              console.log('✅ Recording saved successfully to:', result.outputPath)
               dispatch(setOutputPath(result.outputPath))
               
               // Auto-import the saved recording into media library
               try {
+                console.log('📥 Auto-importing saved recording to media library...')
                 const importResult = await window.electronAPI.file.importByPath(result.outputPath)
                 if (importResult.success && importResult.file) {
+                  console.log('✅ Recording imported to media library:', importResult.file.name)
                   dispatch(addMediaFile(importResult.file))
+                } else {
+                  console.warn('⚠️ Failed to auto-import recording:', importResult.error)
                 }
               } catch (importError) {
                 console.error('Error auto-importing recorded file:', importError)
                 // Don't show error to user - file was saved successfully
               }
             } else {
+              console.error('❌ Failed to save recording:', result.error)
               dispatch(setRecordingError(result.error || 'Failed to save recording'))
             }
           } catch (error) {
@@ -436,15 +472,17 @@ export const useRecording = () => {
             dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to save recording'))
           }
         } else {
-          console.error('No data recorded - blob is empty')
+          console.error('❌ No data recorded - blob is empty')
           dispatch(setRecordingError('No data was recorded'))
         }
         
         // Clear the global references
+        console.log('🧹 Cleaning up recording references...')
         ;(window as any).currentMediaRecorder = null
         ;(window as any).currentTimerInterval = null
         ;(window as any).currentWebcamStream = null
         ;(window as any).currentWebcamChunks = null
+        console.log('✅ Recording cleanup complete')
       }
       
       mediaRecorder.start(1000) // Request data every 1 second
