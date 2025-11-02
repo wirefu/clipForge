@@ -43,6 +43,16 @@
   background-color: #555;
 }
 
+.track-btn.active {
+  background-color: #00d4ff;
+  color: #000;
+  border-color: #00d4ff;
+}
+
+.track-btn.active:hover {
+  background-color: #00ffff;
+}
+
 .timeline-track {
   position: relative;
   background-color: #1e1e1e;

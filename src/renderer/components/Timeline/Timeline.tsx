@@ -8,7 +8,8 @@ import {
   setSnapToGrid,
   splitClip,
   removeClip,
-  selectClip
+  selectClip,
+  updateTrack
 } from '../../store/slices/timeline.slice'
 import {
   timeToPixels,
@@ -132,6 +133,11 @@ function Timeline({ onTimeUpdate, onAddClip, onUpdateClip, onExport, canExport }
   // Handle clip deletion
   const handleDeleteClip = useCallback((clipId: string) => {
     dispatch(removeClip(clipId))
+  }, [dispatch])
+  
+  // Handle track update (mute/solo)
+  const handleUpdateTrack = useCallback((trackId: string, updates: Partial<import('../../types').TimelineTrack>) => {
+    dispatch(updateTrack({ id: trackId, updates }))
   }, [dispatch])
   
   // Handle split at playhead
@@ -260,6 +266,7 @@ function Timeline({ onTimeUpdate, onAddClip, onUpdateClip, onExport, canExport }
               onSelectClip={handleSelectClip}
               onDeleteClip={handleDeleteClip}
               onAddClip={onAddClip}
+              onUpdateTrack={handleUpdateTrack}
             />
           ))}
           

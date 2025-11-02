@@ -15,6 +15,7 @@ interface TimelineTrackProps {
   onSelectClip: (clipId: string) => void
   onDeleteClip: (clipId: string) => void
   onAddClip: (clip: TimelineClip) => void
+  onUpdateTrack?: (trackId: string, updates: Partial<TimelineTrackType>) => void
 }
 
 function TimelineTrack({
@@ -27,7 +28,8 @@ function TimelineTrack({
   onUpdateClip,
   onSelectClip,
   onDeleteClip,
-  onAddClip
+  onAddClip,
+  onUpdateTrack
 }: TimelineTrackProps) {
   const trackRef = useRef<HTMLDivElement>(null)
   const trackHeight = 80
@@ -104,8 +106,32 @@ function TimelineTrack({
       <div className="track-header">
         <div className="track-label">{track.name}</div>
         <div className="track-controls">
-          <button className="track-btn" title="Mute">M</button>
-          <button className="track-btn" title="Solo">S</button>
+          <button 
+            className={`track-btn ${track.muted ? 'active' : ''}`}
+            title={track.muted ? 'Unmute Track (M)' : 'Mute Track (M)'}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              if (onUpdateTrack) {
+                onUpdateTrack(track.id, { muted: !track.muted })
+              }
+            }}
+          >
+            M
+          </button>
+          <button 
+            className={`track-btn ${track.solo ? 'active' : ''}`}
+            title={track.solo ? 'Disable Solo (S)' : 'Solo Track (S) - Play only this track'}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              if (onUpdateTrack) {
+                onUpdateTrack(track.id, { solo: !track.solo })
+              }
+            }}
+          >
+            S
+          </button>
         </div>
       </div>
       
