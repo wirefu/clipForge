@@ -6,6 +6,7 @@ import { startExport, updateProgress, finishExport, cancelExport, setExportError
 import { addClip, updateClip, setPlayheadPosition } from '../../store/slices/timeline.slice'
 import MediaLibrary from '../../components/MediaLibrary/MediaLibrary'
 import TimelinePreview from '../../components/VideoPreview/TimelinePreview'
+import VideoPreview from '../../components/VideoPreview/VideoPreview'
 import Timeline from '../../components/Timeline/Timeline'
 import Toolbar from '../../components/Toolbar/Toolbar'
 import ExportModal from '../../components/ExportModal/ExportModal'
@@ -170,14 +171,32 @@ function Editor() {
         </div>
         
         <div className="editor-center">
-          <TimelinePreview 
-            clips={timelineClips}
-            mediaFiles={mediaFiles}
-            isPlaying={isPlaying}
-            currentTime={currentTime}
-            onTimeUpdate={handleTimeUpdate}
-            onPlaybackEnd={handlePlaybackEnd}
-          />
+          {timelineClips.length > 0 ? (
+            <TimelinePreview 
+              clips={timelineClips}
+              mediaFiles={mediaFiles}
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              onTimeUpdate={handleTimeUpdate}
+              onPlaybackEnd={handlePlaybackEnd}
+            />
+          ) : selectedMedia ? (
+            <VideoPreview
+              media={selectedMedia}
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              onTimeUpdate={handleTimeUpdate}
+              onPlaybackEnd={handlePlaybackEnd}
+            />
+          ) : (
+            <div className="video-preview">
+              <div className="preview-placeholder">
+                <div className="placeholder-icon">🎬</div>
+                <h3>No Media Selected</h3>
+                <p>Select a media file from the library to preview, or add clips to the timeline</p>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="editor-right">

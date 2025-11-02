@@ -11,7 +11,6 @@ const initialState: RecordingState = {
   outputPath: null,
   error: null,
   sources: [],
-  webcamDevices: [],
   selectedSourceId: null
 }
 
@@ -22,10 +21,6 @@ const recordingSlice = createSlice({
     // Source management
     setSources: (state, action: PayloadAction<RecordingSource[]>) => {
       state.sources = action.payload
-    },
-    
-    setWebcamDevices: (state, action: PayloadAction<RecordingSource[]>) => {
-      state.webcamDevices = action.payload
     },
     
     setSelectedSource: (state, action: PayloadAction<string>) => {
@@ -97,7 +92,6 @@ const recordingSlice = createSlice({
 
 export const {
   setSources,
-  setWebcamDevices,
   setSelectedSource,
   startRecording,
   stopRecording,

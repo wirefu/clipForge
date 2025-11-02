@@ -3,21 +3,14 @@ import { join } from 'path'
 import { homedir } from 'os'
 import { writeFile } from 'fs/promises'
 import { recordingService } from '../services/recording.service'
-import { RecordingSettings } from '../../shared/types/recording.types'
+import { RecordingSettings } from '../../shared/types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
-// Track webcam recording status in main process
-let webcamRecordingStatus = {
-  isRecording: false,
-  startTime: null as number | null,
-  duration: 0
-}
 
 export function registerRecordingHandlers() {
   // Check if handler already exists and remove it first
   if (ipcMain.listenerCount(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES) > 0) {
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES)
-    ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES)
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.START_RECORDING)
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.STOP_RECORDING)
     ipcMain.removeAllListeners(IPC_CHANNELS.RECORDING.GET_RECORDING_STATUS)
@@ -33,17 +26,6 @@ export function registerRecordingHandlers() {
       return sources
     } catch (error) {
       console.error('Error getting screen sources:', error)
-      return []
-    }
-  })
-
-  // Get webcam devices - now using desktopCapturer
-  ipcMain.handle(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES, async () => {
-    try {
-      const webcamDevices = await recordingService.getWebcamDevices()
-      return webcamDevices
-    } catch (error) {
-      console.error('Error getting webcam devices:', error)
       return []
     }
   })
@@ -146,12 +128,8 @@ export function registerRecordingHandlers() {
   // Get recording status
   ipcMain.handle(IPC_CHANNELS.RECORDING.GET_RECORDING_STATUS, async () => {
     try {
-      const ffmpegRecording = recordingService.isCurrentlyRecording()
-      const ffmpegDuration = recordingService.getRecordingDuration()
-      
-      // Check both FFmpeg and webcam recording status
-      const isRecording = ffmpegRecording || webcamRecordingStatus.isRecording
-      const duration = ffmpegRecording ? ffmpegDuration : webcamRecordingStatus.duration
+      const isRecording = recordingService.isCurrentlyRecording()
+      const duration = recordingService.getRecordingDuration()
       
       return {
         isRecording,
@@ -166,20 +144,6 @@ export function registerRecordingHandlers() {
         outputPath: null
       }
     }
-  })
-
-  // Set webcam recording status (called from renderer)
-  ipcMain.handle('recording:set-webcam-status', async (_, { isRecording, duration }) => {
-    webcamRecordingStatus.isRecording = isRecording
-    webcamRecordingStatus.duration = duration || 0
-    
-    if (isRecording && !webcamRecordingStatus.startTime) {
-      webcamRecordingStatus.startTime = Date.now()
-    } else if (!isRecording) {
-      webcamRecordingStatus.startTime = null
-    }
-    
-    return { success: true }
   })
 
   // Select recording output directory
@@ -237,17 +201,4 @@ export function registerRecordingHandlers() {
     }
   })
 
-  // Save webcam recording (save blob buffer to file)
-  ipcMain.handle('recording:save-webcam-recording', async (_, { buffer, filePath }: { buffer: Buffer; filePath: string }) => {
-    try {
-      await writeFile(filePath, buffer)
-      return { success: true, outputPath: filePath }
-    } catch (error) {
-      console.error('Error saving webcam recording:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      }
-    }
-  })
 }

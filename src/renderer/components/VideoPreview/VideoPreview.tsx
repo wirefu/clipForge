@@ -27,45 +27,63 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
         setDuration(video.duration)
         setIsLoaded(true)
         
-        // Set video to start at trim start point
+        // Set video to start at trim start point (or beginning if previewing from library)
         if (trimStart > 0) {
           video.currentTime = trimStart
+        } else {
+          video.currentTime = 0
         }
       }
       
       const handleTimeUpdate = () => {
-        // Convert video time to timeline time considering trim points and clip position
-        // Timeline uses percentage (0-100), where 1% = 1 second (assuming 100s timeline)
         const videoTime = video.currentTime
-        // Video time relative to trimmed portion
-        const relativeVideoTime = videoTime - trimStart
-        // Timeline time in seconds = clip.start (in seconds) + relative video time
-        // Since timeline uses percentage where 1% = 1 second, timeline time = clip.start + relativeVideoTime
-        const timelineTime = clipStart + relativeVideoTime
-        onTimeUpdate(timelineTime)
         
-        // If we have a trim end point and we've reached it, pause the video AND stop timeline
-        if (trimEnd && videoTime >= (trimEnd - trimStart)) {
-          video.pause()
-          // Update timeline to the end of trimmed portion
-          const trimmedEndTime = clipStart + (trimEnd - trimStart)
-          onTimeUpdate(trimmedEndTime)
-          // Notify parent that playback ended
-          onPlaybackEnd?.()
+        // When previewing from library (not on timeline), just use video time directly
+        if (clipStart === 0 && trimStart === 0) {
+          onTimeUpdate(videoTime)
+          // Note: ended event will handle when video finishes
+        } else {
+          // When on timeline, convert video time to timeline time considering trim points and clip position
+          const relativeVideoTime = videoTime - trimStart
+          const timelineTime = clipStart + relativeVideoTime
+          onTimeUpdate(timelineTime)
+          
+          // If we have a trim end point and we've reached it, pause the video AND stop timeline
+          if (trimEnd && videoTime >= (trimEnd - trimStart)) {
+            video.pause()
+            const trimmedEndTime = clipStart + (trimEnd - trimStart)
+            onTimeUpdate(trimmedEndTime)
+            onPlaybackEnd?.()
+          }
         }
       }
       
+      const handleEnded = () => {
+        video.pause()
+        if (clipStart === 0 && trimStart === 0) {
+          // When previewing from library, set time to duration
+          onTimeUpdate(video.duration)
+        } else {
+          // When on timeline, set to trimmed end time
+          const trimmedEndTime = clipStart + (trimEnd ? (trimEnd - trimStart) : (video.duration - trimStart))
+          onTimeUpdate(trimmedEndTime)
+        }
+        onPlaybackEnd?.()
+      }
+
       const handleError = (e: any) => {
         console.error('Video error:', e)
       }
       
       video.addEventListener('loadedmetadata', handleLoadedMetadata)
       video.addEventListener('timeupdate', handleTimeUpdate)
+      video.addEventListener('ended', handleEnded)
       video.addEventListener('error', handleError)
       
       return () => {
         video.removeEventListener('loadedmetadata', handleLoadedMetadata)
         video.removeEventListener('timeupdate', handleTimeUpdate)
+        video.removeEventListener('ended', handleEnded)
         video.removeEventListener('error', handleError)
       }
     }
@@ -84,12 +102,19 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
   }, [isPlaying])
 
   useEffect(() => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - (currentTime - clipStart + trimStart)) > 0.1) {
-      // Convert timeline time to video time considering trim points and clip position
-      // Timeline time = clip.start + (video time - trim start)
-      // So: video time = trim start + (timeline time - clip.start)
-      const videoTime = Math.max(trimStart, trimStart + (currentTime - clipStart))
-      videoRef.current.currentTime = Math.min(videoTime, trimEnd || videoRef.current.duration)
+    if (videoRef.current) {
+      // When previewing from library (not on timeline), use currentTime directly
+      if (clipStart === 0 && trimStart === 0) {
+        if (Math.abs(videoRef.current.currentTime - currentTime) > 0.1) {
+          videoRef.current.currentTime = currentTime
+        }
+      } else {
+        // When on timeline, convert timeline time to video time
+        const videoTime = Math.max(trimStart, trimStart + (currentTime - clipStart))
+        if (Math.abs(videoRef.current.currentTime - videoTime) > 0.1) {
+          videoRef.current.currentTime = Math.min(videoTime, trimEnd || videoRef.current.duration)
+        }
+      }
     }
   }, [currentTime, trimStart, clipStart, trimEnd])
 
@@ -111,7 +136,10 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
   }
 
   // Calculate trimmed duration
-  const trimmedDuration = trimEnd ? trimEnd - trimStart : duration - trimStart
+  // When previewing from library (not on timeline), use full duration
+  const trimmedDuration = (clipStart === 0 && trimStart === 0) 
+    ? duration 
+    : (trimEnd ? trimEnd - trimStart : duration - trimStart)
 
   if (!media) {
     return (
@@ -130,11 +158,13 @@ function VideoPreview({ media, isPlaying, currentTime, onTimeUpdate, trimStart =
       <div className="preview-container">
         {(media.type === 'video' || media.type.startsWith('video/')) ? (
           <video
+            key={media.id}
             ref={videoRef}
             src={getMediaUrl(media)}
             className="preview-video"
             controls={true}
             muted={false}
+            preload="metadata"
           />
         ) : (media.type === 'audio' || media.type.startsWith('audio/')) ? (
           <div className="audio-preview">

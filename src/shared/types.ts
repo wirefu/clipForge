@@ -64,24 +64,7 @@ export interface TimelineState {
   selectedClipId?: string
 }
 
-export interface RecordingSource {
-  id: string
-  name: string
-  type: 'screen' | 'window' | 'webcam'
-  thumbnail: string // base64 encoded thumbnail
-}
-
-export interface RecordingSettings {
-  sourceId: string
-  audio: boolean
-  video: boolean
-  quality: 'low' | 'medium' | 'high'
-  frameRate: number
-  resolution?: {
-    width: number
-    height: number
-  }
-}
+// RecordingSource and RecordingSettings are exported from recording.types.ts above
 
 export interface ExportSettings {
   outputPath: string

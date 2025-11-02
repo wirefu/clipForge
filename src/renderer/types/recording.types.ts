@@ -4,17 +4,16 @@
 export interface RecordingSource {
   id: string
   name: string
-  type: 'screen' | 'window' | 'webcam'
+  type: 'screen' | 'window'
   thumbnail?: string
   isAvailable: boolean
   displayId?: string // For screen sources
   windowId?: string // For window sources
-  deviceId?: string // For webcam sources
 }
 
 export interface RecordingSettings {
   sourceId: string
-  sourceType: 'screen' | 'window' | 'webcam'
+  sourceType: 'screen' | 'window'
   resolution: {
     width: number
     height: number
@@ -23,7 +22,6 @@ export interface RecordingSettings {
   bitrate: number
   audioEnabled: boolean
   audioSource?: string // Microphone device ID
-  webcamDeviceId?: string // Webcam device ID for webcam recording
   outputPath: string
   filename: string
   format: 'mp4' | 'mov' | 'avi'
@@ -40,7 +38,6 @@ export interface RecordingState {
   outputPath: string | null
   error: string | null
   sources: RecordingSource[]
-  webcamDevices: RecordingSource[]
   selectedSourceId: string | null
 }
 

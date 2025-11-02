@@ -2,7 +2,7 @@ import { desktopCapturer, screen, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
 import { spawn, ChildProcess } from 'child_process'
-import { RecordingSource, RecordingSettings } from '../../shared/types/recording.types'
+import { RecordingSource, RecordingSettings } from '../../shared/types'
 
 export class RecordingService {
   private recordingProcess: ChildProcess | null = null
@@ -41,20 +41,6 @@ export class RecordingService {
       })
     } catch (error) {
       console.error('Error getting screen sources:', error)
-      return []
-    }
-  }
-
-  /**
-   * Get available webcam devices (handled in renderer process)
-   */
-  async getWebcamDevices(): Promise<RecordingSource[]> {
-    try {
-      // Webcam devices are handled in renderer process using navigator.mediaDevices
-      // This is a placeholder - actual implementation is in useRecording hook
-      return []
-    } catch (error) {
-      console.error('Error getting webcam devices:', error)
       return []
     }
   }
@@ -326,41 +312,6 @@ export class RecordingService {
   }
 
   /**
-   * Get webcam device index for FFmpeg
-   */
-  private async getWebcamDeviceIndex(webcamDeviceId?: string): Promise<string> {
-    try {
-      
-      // Get FFmpeg device list to find the correct index
-      const devices = await this.getFFmpegDevices()
-      
-      // For webcam recording, we'll use the first available video device
-      // This is a simplified approach - in practice, you might need more sophisticated detection
-      let videoIndex = 0
-      
-      // Find FaceTime HD Camera or first camera device
-      const facetimeIndex = devices.video.findIndex(device => 
-        device.toLowerCase().includes('facetime') || 
-        device.toLowerCase().includes('camera')
-      )
-      
-      if (facetimeIndex !== -1) {
-        videoIndex = facetimeIndex
-      }
-      
-      // Audio device is usually index 0 (MacBook Pro Microphone)
-      const audioIndex = 0
-      
-      const deviceIndex = `${videoIndex}:${audioIndex}`
-      
-      return deviceIndex
-    } catch (error) {
-      console.error('Error getting webcam device index:', error)
-      return '0:0' // Fallback to default
-    }
-  }
-
-  /**
    * Build FFmpeg command for screen recording
    */
   private async buildFFmpegCommand(settings: RecordingSettings): Promise<string[]> {
@@ -370,29 +321,13 @@ export class RecordingService {
     if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
       args.push('-f', 'avfoundation')
       args.push('-i', '1:0')
-    } else if (settings.sourceType === 'webcam') {
-      // Webcam recording is handled in the renderer process using MediaRecorder
-      // This is a placeholder - actual webcam recording uses MediaRecorder API
-      return []
     }
 
-    // For webcam recording, use supported resolution and frame rate
-    if (settings.sourceType === 'webcam') {
-      args.push(
-        '-framerate', '30.000030',  // Use exact frame rate that webcam supports
-        '-s', '1280x720',           // Use 720p instead of 1080p
-        '-b:v', `${settings.bitrate}k`,
-        '-avoid_negative_ts', 'make_zero'  // Fix timestamp issues
-        // Note: Removed -pix_fmt yuv420p as webcam doesn't support it
-        // FFmpeg will auto-detect the correct pixel format (uyvy422)
-      )
-    } else {
-      args.push(
-        '-r', settings.framerate.toString(),
-        '-b:v', `${settings.bitrate}k`,
-        '-pix_fmt', 'yuv420p'
-      )
-    }
+    args.push(
+      '-r', settings.framerate.toString(),
+      '-b:v', `${settings.bitrate}k`,
+      '-pix_fmt', 'yuv420p'
+    )
 
     if (settings.audioEnabled) {
       args.push('-b:a', '128k')

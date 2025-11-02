@@ -89,6 +89,22 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
     }
   }, [])
 
+  // Update video source when media changes
+  useEffect(() => {
+    if (!videoRef.current || !activeMedia) return
+    
+    const video = videoRef.current
+    const newSrc = getMediaUrl(activeMedia)
+    
+    // Only update if the src has actually changed
+    if (video.src !== newSrc && video.getAttribute('src') !== newSrc) {
+      console.log('Updating video src:', newSrc)
+      video.src = newSrc
+      // Reload the video element to load the new source
+      video.load()
+    }
+  }, [activeMedia, getMediaUrl])
+
   // Handle video seeking when timeline time changes (scrubbing)
   useEffect(() => {
     if (!videoRef.current || !activeClip || !activeMedia) return
@@ -286,6 +302,7 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
       <div className="preview-container">
         {(activeMedia.type === 'video' || activeMedia.type.startsWith('video/')) ? (
           <video
+            key={activeMedia.id}
             ref={videoRef}
             src={getMediaUrl(activeMedia)}
             className="preview-video"
@@ -301,6 +318,7 @@ function TimelinePreview({ clips, mediaFiles, isPlaying, currentTime, onTimeUpda
               <p>Audio Preview</p>
             </div>
             <audio
+              key={activeMedia.id}
               ref={videoRef}
               src={getMediaUrl(activeMedia)}
               className="preview-audio"

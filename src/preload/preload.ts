@@ -45,9 +45,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getScreenSources: (): Promise<RecordingSource[]> => 
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.GET_SCREEN_SOURCES),
     
-    getWebcamDevices: (): Promise<RecordingSource[]> => 
-      ipcRenderer.invoke(IPC_CHANNELS.RECORDING.GET_WEBCAM_DEVICES),
-    
     startRecording: (settings: RecordingSettings): Promise<{ success: boolean; error?: string }> => 
       ipcRenderer.invoke(IPC_CHANNELS.RECORDING.START_RECORDING, settings),
     
@@ -62,12 +59,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     
     selectOutputFile: (defaultFilename: string): Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }> => 
       ipcRenderer.invoke('recording:select-output-file', { defaultFilename }),
-    
-    setWebcamStatus: (status: { isRecording: boolean; duration?: number }): Promise<{ success: boolean }> => 
-      ipcRenderer.invoke('recording:set-webcam-status', status),
-    
-    saveWebcamRecording: (data: { buffer: Buffer; filePath: string }): Promise<{ success: boolean; outputPath?: string; error?: string }> => 
-      ipcRenderer.invoke('recording:save-webcam-recording', data),
   },
   
   // Timeline operations
