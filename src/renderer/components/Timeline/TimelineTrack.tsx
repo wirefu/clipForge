@@ -57,19 +57,17 @@ function TimelineTrack({
       const dropX = e.clientX - rect.left
       const dropTime = pixelsToTime(dropX, zoomLevel)
       
-      // Apply snapping
+      // Apply snapping (grid takes priority over clip edges)
       let snappedTime = dropTime
       if (snapToGridEnabled) {
         const snapResult = snapToGrid(dropTime, gridSize)
-        if (snapResult.wasSnapped) {
-          snappedTime = snapResult.snappedValue
+        snappedTime = snapResult.snappedValue
+      } else {
+        // Only snap to clip edges if grid snapping is disabled
+        const snapToEdge = snapToClipEdge(dropTime, clipEdges, 0.1)
+        if (snapToEdge.wasSnapped) {
+          snappedTime = snapToEdge.snappedValue
         }
-      }
-      
-      // Snap to clip edges
-      const snapToEdge = snapToClipEdge(snappedTime, clipEdges, 0.1)
-      if (snapToEdge.wasSnapped) {
-        snappedTime = snapToEdge.snappedValue
       }
       
       // Clamp to valid range
