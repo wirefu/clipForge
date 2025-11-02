@@ -158,7 +158,13 @@ function Editor() {
       <div className="editor-content">
         <div className="editor-left">
           <MediaLibrary 
-            onMediaSelect={(media) => handleMediaSelect(media || null)}
+            onMediaSelect={(media) => {
+              if (media) {
+                handleMediaSelect(media)
+              } else {
+                setSelectedMedia(null)
+              }
+            }}
             selectedMedia={selectedMedia}
           />
         </div>
