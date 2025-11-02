@@ -15,6 +15,7 @@ import {
   updateRecordingSettings,
   setOutputPath
 } from '../store/slices/recording.slice'
+import { addMediaFile } from '../store/slices/mediaLibrary.slice'
 import { RecordingSource, RecordingSettings } from '../types/recording.types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
@@ -125,16 +126,48 @@ export const useRecording = () => {
         return
       }
       
-      // Request camera access
+      // Request camera access - ensure we use the correct deviceId
+      // Only use deviceId constraint if we have a valid deviceId
+      const videoConstraints: MediaTrackConstraints = {
+        width: { ideal: settings.resolution.width },
+        height: { ideal: settings.resolution.height },
+        frameRate: { ideal: settings.framerate }
+      }
+      
+      // Add deviceId constraint only if it's a valid deviceId
+      // Prioritize source.deviceId over source.id, but ensure it's a valid deviceId string
+      if (source.deviceId && source.deviceId !== source.id && source.deviceId.length > 0) {
+        // Use deviceId if it exists and is different from the generic id
+        videoConstraints.deviceId = { exact: source.deviceId }
+      } else if (source.id && source.id.length > 20 && source.id.includes('videoinput')) {
+        // Use source.id if it looks like a valid deviceId (long string containing 'videoinput')
+        videoConstraints.deviceId = { exact: source.id }
+      } else {
+        // If no valid deviceId, getUserMedia will use the default camera
+        // This is acceptable - browser will prompt user if needed
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          deviceId: { exact: source.deviceId || source.id },
-          width: { ideal: settings.resolution.width },
-          height: { ideal: settings.resolution.height },
-          frameRate: { ideal: settings.framerate }
-        },
-        audio: settings.audioEnabled
+        video: videoConstraints,
+        audio: settings.audioEnabled ? {
+          echoCancellation: true,
+          noiseSuppression: true
+        } : false
       })
+      
+      // Verify that we got a video track from camera (not screen)
+      const videoTrack = stream.getVideoTracks()[0]
+      if (!videoTrack) {
+        stream.getTracks().forEach(track => track.stop())
+        throw new Error('No video track available from camera')
+      }
+      
+      // Check track label to ensure it's from camera, not screen
+      const trackLabel = videoTrack.label.toLowerCase()
+      if (trackLabel.includes('screen') || trackLabel.includes('display') || trackLabel.includes('window')) {
+        stream.getTracks().forEach(track => track.stop())
+        throw new Error('Screen capture detected instead of camera. Please ensure camera permissions are granted.')
+      }
       
       // Create MediaRecorder
       const mediaRecorder = new MediaRecorder(stream, {
@@ -187,6 +220,17 @@ export const useRecording = () => {
             
             if (result.success && result.outputPath) {
               dispatch(setOutputPath(result.outputPath))
+              
+              // Auto-import the saved recording into media library
+              try {
+                const importResult = await window.electronAPI.file.importByPath(result.outputPath)
+                if (importResult.success && importResult.file) {
+                  dispatch(addMediaFile(importResult.file))
+                }
+              } catch (importError) {
+                console.error('Error auto-importing recorded file:', importError)
+                // Don't show error to user - file was saved successfully
+              }
             } else {
               dispatch(setRecordingError(result.error || 'Failed to save recording'))
             }
@@ -267,6 +311,7 @@ export const useRecording = () => {
           // Stop webcam recording
           const mediaRecorder = (window as any).currentMediaRecorder
           const timerInterval = (window as any).currentTimerInterval
+          const stream = (window as any).currentWebcamStream
           
           // Clear timer first to stop duration updates
           if (timerInterval) {
@@ -288,13 +333,28 @@ export const useRecording = () => {
               mediaRecorder.stop()
             })
             
+            // Ensure stream is stopped (in case onstop didn't stop it)
+            if (stream) {
+              stream.getTracks().forEach((track: MediaStreamTrack) => {
+                track.stop()
+              })
+              ;(window as any).currentWebcamStream = null
+            }
+            
             // Notify main process that webcam recording stopped
             await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
             
             // Dispatch stop recording to update Redux state (after onstop completes)
             dispatch(stopRecording())
           } else {
-            // If MediaRecorder is not running, just update state
+            // If MediaRecorder is not running, stop stream and update state
+            if (stream) {
+              stream.getTracks().forEach((track: MediaStreamTrack) => {
+                track.stop()
+              })
+              ;(window as any).currentWebcamStream = null
+            }
+            
             await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
             dispatch(stopRecording())
           }
@@ -323,9 +383,19 @@ export const useRecording = () => {
     if (recordingState.sourceType === 'webcam') {
       // For webcam recording, pause MediaRecorder
       const mediaRecorder = (window as any).currentMediaRecorder
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.pause()
-        dispatch(pauseRecording())
+      if (mediaRecorder) {
+        if (mediaRecorder.state === 'recording') {
+          try {
+            mediaRecorder.pause()
+            dispatch(pauseRecording())
+          } catch (error) {
+            console.error('Error pausing MediaRecorder:', error)
+            dispatch(setRecordingError('Failed to pause recording'))
+          }
+        } else if (mediaRecorder.state === 'paused') {
+          // Already paused, just update state
+          dispatch(pauseRecording())
+        }
       }
     } else {
       // For screen recording, just update state (FFmpeg pause handled differently)
@@ -338,9 +408,19 @@ export const useRecording = () => {
     if (recordingState.sourceType === 'webcam') {
       // For webcam recording, resume MediaRecorder
       const mediaRecorder = (window as any).currentMediaRecorder
-      if (mediaRecorder && mediaRecorder.state === 'paused') {
-        mediaRecorder.resume()
-        dispatch(resumeRecording())
+      if (mediaRecorder) {
+        if (mediaRecorder.state === 'paused') {
+          try {
+            mediaRecorder.resume()
+            dispatch(resumeRecording())
+          } catch (error) {
+            console.error('Error resuming MediaRecorder:', error)
+            dispatch(setRecordingError('Failed to resume recording'))
+          }
+        } else if (mediaRecorder.state === 'recording') {
+          // Already recording, just update state
+          dispatch(resumeRecording())
+        }
       }
     } else {
       // For screen recording, just update state

@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     import: (): Promise<ImportResult> => 
       ipcRenderer.invoke(IPC_CHANNELS.FILE.IMPORT),
     
+    importByPath: (filePath: string): Promise<ImportResult> => 
+      ipcRenderer.invoke('file:import-by-path', filePath),
+    
     export: (settings: ExportSettings): Promise<string | null> => 
       ipcRenderer.invoke(IPC_CHANNELS.FILE.EXPORT, settings),
     

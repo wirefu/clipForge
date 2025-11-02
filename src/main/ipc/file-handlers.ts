@@ -148,6 +148,53 @@ ipcMain.handle('file:get-metadata', async (event, filePath: string): Promise<Med
 })
 
 /**
+ * Imports a file by path (used for auto-importing recorded files)
+ */
+ipcMain.handle('file:import-by-path', async (event, filePath: string): Promise<ImportResult> => {
+  try {
+    // Validate the file
+    const validation = await validateVideoFile(filePath)
+    if (!validation.isValid) {
+      return { success: false, error: validation.error }
+    }
+
+    // Check if file is already imported
+    const existingFile = importedFiles.find(f => f.path === filePath)
+    if (existingFile) {
+      return { success: true, file: existingFile }
+    }
+
+    // Create MediaFile object
+    const mediaFile = await createMediaFile(filePath)
+    
+    // Generate thumbnail
+    if (mediaFile.type === 'video') {
+      const thumbnailResult = await thumbnailService.generateThumbnail(filePath, {
+        width: 320,
+        height: 180,
+        timeOffset: 1,
+        quality: 2
+      })
+      
+      if (thumbnailResult.success && thumbnailResult.thumbnailPath) {
+        mediaFile.thumbnail = thumbnailResult.thumbnailPath
+      }
+    }
+    
+    // Store the file
+    importedFiles.push(mediaFile)
+    
+    return { success: true, file: mediaFile }
+    
+  } catch (error) {
+    return { 
+      success: false, 
+      error: `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}` 
+    }
+  }
+})
+
+/**
  * Gets all imported files
  */
 ipcMain.handle('file:get-imported', async (): Promise<MediaFile[]> => {
