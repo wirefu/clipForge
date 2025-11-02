@@ -1,6 +1,12 @@
 import { promises as fs } from 'fs'
 import { extname, basename } from 'path'
+import ffmpeg from 'fluent-ffmpeg'
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { MediaFile, MediaMetadata, FileValidationResult, getFileTypeFromExtension, getFileExtension, FILE_SIZE_LIMITS } from '../../renderer/types/media.types'
+
+// Set FFmpeg/FFprobe paths
+ffmpeg.setFfprobePath(ffmpegInstaller.path)
+ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
 /**
  * Validates a video file based on format and size
@@ -70,45 +76,125 @@ export async function validateVideoFile(filePath: string): Promise<FileValidatio
 }
 
 /**
- * Extracts metadata from a video file using ffprobe
- * Note: This is a placeholder implementation. In a real app, you'd use ffprobe
+ * Extracts metadata from a video/audio/image file using ffprobe
  */
 export async function getVideoMetadata(filePath: string): Promise<MediaMetadata> {
   try {
-    // Get file stats
-    const stats = await fs.stat(filePath)
     const extension = getFileExtension(basename(filePath))
+    const fileType = getFileTypeFromExtension(extension)
     
-    // Placeholder metadata - in a real implementation, you'd use ffprobe
-    // to extract actual video metadata
-    const metadata: MediaMetadata = {
-      width: 1920,
-      height: 1080,
-      fps: 30,
-      bitrate: 5000000,
-      codec: 'h264',
-      audioCodec: 'aac',
-      audioChannels: 2,
-      audioSampleRate: 44100,
-      aspectRatio: '16:9',
-      colorSpace: 'bt709',
-      hasAudio: true,
-      hasVideo: true,
+    // For image files, return basic metadata without ffprobe
+    if (fileType === 'image') {
+      return {
+        width: undefined,
+        height: undefined,
+        fps: undefined,
+        bitrate: undefined,
+        codec: undefined,
+        audioCodec: undefined,
+        audioChannels: undefined,
+        audioSampleRate: undefined,
+        aspectRatio: undefined,
+        colorSpace: undefined,
+        hasAudio: false,
+        hasVideo: false,
+      }
     }
     
-    // For now, return basic metadata based on file extension
-    if (extension === '.mp4') {
-      metadata.codec = 'h264'
-      metadata.audioCodec = 'aac'
-    } else if (extension === '.mov') {
-      metadata.codec = 'h264'
-      metadata.audioCodec = 'aac'
-    } else if (extension === '.webm') {
-      metadata.codec = 'vp9'
-      metadata.audioCodec = 'opus'
-    }
-    
-    return metadata
+    // Use ffprobe to extract real metadata for video/audio files
+    return new Promise<MediaMetadata>((resolve, reject) => {
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
+        if (err) {
+          // If ffprobe fails, return default metadata
+          console.error('FFprobe error:', err)
+          const defaultMetadata: MediaMetadata = {
+            width: undefined,
+            height: undefined,
+            fps: undefined,
+            bitrate: undefined,
+            codec: undefined,
+            audioCodec: undefined,
+            audioChannels: undefined,
+            audioSampleRate: undefined,
+            aspectRatio: undefined,
+            colorSpace: undefined,
+            hasAudio: false,
+            hasVideo: false,
+          }
+          resolve(defaultMetadata)
+          return
+        }
+        
+        // Extract video stream information
+        const videoStream = metadata.streams?.find(s => s.codec_type === 'video')
+        const audioStream = metadata.streams?.find(s => s.codec_type === 'audio')
+        
+        // Extract width and height
+        const width = videoStream?.width ? parseInt(videoStream.width.toString(), 10) : undefined
+        const height = videoStream?.height ? parseInt(videoStream.height.toString(), 10) : undefined
+        
+        // Extract FPS
+        let fps: number | undefined
+        if (videoStream?.r_frame_rate) {
+          const [num, den] = videoStream.r_frame_rate.split('/').map(Number)
+          if (den && den > 0) {
+            fps = num / den
+          }
+        } else if (videoStream?.avg_frame_rate) {
+          const [num, den] = videoStream.avg_frame_rate.split('/').map(Number)
+          if (den && den > 0) {
+            fps = num / den
+          }
+        }
+        
+        // Extract bitrate (from format or video stream)
+        const bitrate = metadata.format?.bit_rate 
+          ? parseInt(metadata.format.bit_rate, 10) 
+          : videoStream?.bit_rate 
+            ? parseInt(videoStream.bit_rate, 10) 
+            : undefined
+        
+        // Extract codec information
+        const codec = videoStream?.codec_name || undefined
+        const audioCodec = audioStream?.codec_name || undefined
+        
+        // Extract audio channel information
+        const audioChannels = audioStream?.channels || undefined
+        const audioSampleRate = audioStream?.sample_rate 
+          ? parseInt(audioStream.sample_rate, 10) 
+          : undefined
+        
+        // Calculate aspect ratio
+        let aspectRatio: string | undefined
+        if (width && height) {
+          const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b)
+          const divisor = gcd(width, height)
+          aspectRatio = `${width / divisor}:${height / divisor}`
+        }
+        
+        // Extract color space (if available)
+        const colorSpace = videoStream?.color_space || 
+                         videoStream?.color_primaries || 
+                         undefined
+        
+        const extractedMetadata: MediaMetadata = {
+          width,
+          height,
+          fps: fps ? Math.round(fps * 100) / 100 : undefined, // Round to 2 decimal places
+          bitrate,
+          codec,
+          audioCodec,
+          audioChannels,
+          audioSampleRate,
+          aspectRatio,
+          colorSpace,
+          hasAudio: !!audioStream,
+          hasVideo: !!videoStream,
+        }
+        
+        resolve(extractedMetadata)
+      })
+    })
     
   } catch (error) {
     throw new Error(`Failed to extract metadata: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -131,11 +217,142 @@ export async function createMediaFile(filePath: string): Promise<MediaFile> {
   // Generate unique ID
   const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   
-  // Extract metadata
-  const metadata = await getVideoMetadata(filePath)
+  // Extract metadata and duration using ffprobe (single call for efficiency)
+  let metadata: MediaMetadata
+  let duration = 0
   
-  // Calculate duration (placeholder - in real app, use ffprobe)
-  const duration = metadata.hasVideo ? 60 : 0 // Default 60 seconds for video
+  if (fileType === 'video' || fileType === 'audio') {
+    // Extract both metadata and duration in a single ffprobe call
+    try {
+      const probeResult = await new Promise<{ metadata: MediaMetadata; duration: number }>((resolve, reject) => {
+        ffmpeg.ffprobe(filePath, (err, probeMetadata) => {
+          if (err) {
+            console.error('FFprobe error:', err)
+            // Return default values if ffprobe fails
+            resolve({
+              metadata: {
+                width: undefined,
+                height: undefined,
+                fps: undefined,
+                bitrate: undefined,
+                codec: undefined,
+                audioCodec: undefined,
+                audioChannels: undefined,
+                audioSampleRate: undefined,
+                aspectRatio: undefined,
+                colorSpace: undefined,
+                hasAudio: false,
+                hasVideo: false,
+              },
+              duration: 0
+            })
+            return
+          }
+          
+          // Extract duration from format
+          const fileDuration = probeMetadata.format?.duration 
+            ? parseFloat(probeMetadata.format.duration) 
+            : 0
+          
+          // Extract video stream information
+          const videoStream = probeMetadata.streams?.find(s => s.codec_type === 'video')
+          const audioStream = probeMetadata.streams?.find(s => s.codec_type === 'audio')
+          
+          // Extract width and height
+          const width = videoStream?.width ? parseInt(videoStream.width.toString(), 10) : undefined
+          const height = videoStream?.height ? parseInt(videoStream.height.toString(), 10) : undefined
+          
+          // Extract FPS
+          let fps: number | undefined
+          if (videoStream?.r_frame_rate) {
+            const [num, den] = videoStream.r_frame_rate.split('/').map(Number)
+            if (den && den > 0) {
+              fps = num / den
+            }
+          } else if (videoStream?.avg_frame_rate) {
+            const [num, den] = videoStream.avg_frame_rate.split('/').map(Number)
+            if (den && den > 0) {
+              fps = num / den
+            }
+          }
+          
+          // Extract bitrate (from format or video stream)
+          const bitrate = probeMetadata.format?.bit_rate 
+            ? parseInt(probeMetadata.format.bit_rate, 10) 
+            : videoStream?.bit_rate 
+              ? parseInt(videoStream.bit_rate, 10) 
+              : undefined
+          
+          // Extract codec information
+          const codec = videoStream?.codec_name || undefined
+          const audioCodec = audioStream?.codec_name || undefined
+          
+          // Extract audio channel information
+          const audioChannels = audioStream?.channels || undefined
+          const audioSampleRate = audioStream?.sample_rate 
+            ? parseInt(audioStream.sample_rate, 10) 
+            : undefined
+          
+          // Calculate aspect ratio
+          let aspectRatio: string | undefined
+          if (width && height) {
+            const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b)
+            const divisor = gcd(width, height)
+            aspectRatio = `${width / divisor}:${height / divisor}`
+          }
+          
+          // Extract color space (if available)
+          const colorSpace = videoStream?.color_space || 
+                           videoStream?.color_primaries || 
+                           undefined
+          
+          const extractedMetadata: MediaMetadata = {
+            width,
+            height,
+            fps: fps ? Math.round(fps * 100) / 100 : undefined,
+            bitrate,
+            codec,
+            audioCodec,
+            audioChannels,
+            audioSampleRate,
+            aspectRatio,
+            colorSpace,
+            hasAudio: !!audioStream,
+            hasVideo: !!videoStream,
+          }
+          
+          resolve({
+            metadata: extractedMetadata,
+            duration: fileDuration
+          })
+        })
+      })
+      
+      metadata = probeResult.metadata
+      duration = probeResult.duration
+    } catch (error) {
+      console.error('Error extracting metadata:', error)
+      metadata = {
+        width: undefined,
+        height: undefined,
+        fps: undefined,
+        bitrate: undefined,
+        codec: undefined,
+        audioCodec: undefined,
+        audioChannels: undefined,
+        audioSampleRate: undefined,
+        aspectRatio: undefined,
+        colorSpace: undefined,
+        hasAudio: false,
+        hasVideo: false,
+      }
+      duration = 0
+    }
+  } else {
+    // For image files, use simplified metadata extraction
+    metadata = await getVideoMetadata(filePath)
+    duration = 0
+  }
   
   const mediaFile: MediaFile = {
     id,
