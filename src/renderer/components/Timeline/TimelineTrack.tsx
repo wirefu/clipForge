@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { TimelineTrack as TimelineTrackType, TimelineClip } from '../../types'
-import TimelineClip from './TimelineClip'
+import TimelineClipComponent from './TimelineClip'
 import { timeToPixels, pixelsToTime, snapToGrid, snapToClipEdge, getClipEdges } from '../../utils/timeline.utils'
 import './TimelineTrack.css'
 
@@ -124,7 +124,7 @@ function TimelineTrack({
         {track.clips.map(clip => {
           const otherEdges = getOtherClipEdges(clip.id)
           return (
-            <TimelineClip
+            <TimelineClipComponent
               key={clip.id}
               clip={clip}
               zoomLevel={zoomLevel}
