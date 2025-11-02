@@ -108,15 +108,56 @@ export const useRecording = () => {
       
       // Now enumerate devices (labels will be available if permission was granted)
       const devices = await navigator.mediaDevices.enumerateDevices()
-      const videoDevices = devices.filter(device => device.kind === 'videoinput')
       
-      const webcamSources = videoDevices.map((device, index) => ({
+      // CRITICAL: Filter for videoinput devices only - these are cameras, not screens
+      // Screen capture devices have kind='videoinput' in some cases, but their labels identify them
+      const videoInputDevices = devices.filter(device => {
+        if (device.kind !== 'videoinput') {
+          return false
+        }
+        
+        // Additional filter: exclude devices that look like screen sources
+        const label = (device.label || '').toLowerCase()
+        if (label.includes('screen') || 
+            label.includes('display') || 
+            label.includes('window') ||
+            label.includes('desktop') ||
+            label.includes('entire screen')) {
+          console.warn('Excluding screen capture device from webcam list:', device.label, device.deviceId)
+          return false
+        }
+        
+        // Exclude devices with screen-related deviceIds
+        const deviceId = (device.deviceId || '').toLowerCase()
+        if (deviceId.includes('screen') || 
+            deviceId.includes('window') || 
+            deviceId.includes('display') ||
+            deviceId.startsWith('screen:') ||
+            deviceId.startsWith('window:')) {
+          console.warn('Excluding screen capture device ID from webcam list:', device.label, device.deviceId)
+          return false
+        }
+        
+        return true
+      })
+      
+      console.log('Found videoinput (camera) devices:', videoInputDevices.map(d => ({
+        label: d.label,
+        deviceId: d.deviceId,
+        kind: d.kind
+      })))
+      
+      const webcamSources = videoInputDevices.map((device, index) => ({
         id: device.deviceId || `webcam-${index}`,
         name: device.label || `Webcam ${index + 1}`,
         type: 'webcam' as const,
         isAvailable: true,
         deviceId: device.deviceId
       }))
+      
+      if (webcamSources.length === 0) {
+        console.warn('No webcam devices found. Make sure your camera is connected and permissions are granted.')
+      }
       
       dispatch(setWebcamDevices(webcamSources))
     } catch (error) {
@@ -147,16 +188,59 @@ export const useRecording = () => {
       
       // Add deviceId constraint - prioritize actual deviceId from MediaDeviceInfo
       // The deviceId should come from navigator.mediaDevices.enumerateDevices()
-      if (source.deviceId) {
+      // CRITICAL: We MUST use deviceId to ensure we get camera, not screen
+      let hasValidDeviceId = false
+      
+      if (source.deviceId && source.deviceId.length > 0 && !source.deviceId.startsWith('screen')) {
         // Use the actual deviceId from MediaDeviceInfo
         videoConstraints.deviceId = { exact: source.deviceId }
-      } else if (source.id && source.id !== `webcam-${recordingState.webcamDevices.indexOf(source)}`) {
-        // If source.id is not a generic id, use it as deviceId
+        hasValidDeviceId = true
+        console.log('Using webcam deviceId:', source.deviceId, 'from source:', source.name)
+      } else if (source.id && source.id.length > 0 && !source.id.startsWith('screen') && 
+                 source.id !== `webcam-${recordingState.webcamDevices.indexOf(source)}` &&
+                 !source.id.includes('window') && !source.id.includes('display')) {
+        // If source.id is not a generic id and not a screen source, use it as deviceId
         videoConstraints.deviceId = { exact: source.id }
+        hasValidDeviceId = true
+        console.log('Using webcam source.id as deviceId:', source.id, 'from source:', source.name)
+      } else {
+        // If no valid deviceId, enumerate devices again to get the correct one
+        console.warn('No valid deviceId found for source:', source.name, 'sourceId:', source.id, 'deviceId:', source.deviceId)
+        console.warn('Re-enumerating devices to find correct camera...')
+        
+        try {
+          // Re-enumerate to get fresh device list with labels
+          const devices = await navigator.mediaDevices.enumerateDevices()
+          const videoInputDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId && d.deviceId.length > 0)
+          
+          // Try to find matching device by label or use first available videoinput
+          const matchingDevice = videoInputDevices.find(d => 
+            d.label === source.name || 
+            d.deviceId === source.deviceId ||
+            d.deviceId === source.id
+          ) || videoInputDevices[0]
+          
+          if (matchingDevice && matchingDevice.deviceId) {
+            videoConstraints.deviceId = { exact: matchingDevice.deviceId }
+            hasValidDeviceId = true
+            console.log('Found matching camera device:', matchingDevice.label, 'deviceId:', matchingDevice.deviceId)
+          } else {
+            console.error('No videoinput devices found! Cannot record camera.')
+            throw new Error('No camera devices available. Please ensure your webcam is connected and permissions are granted.')
+          }
+        } catch (enumError) {
+          console.error('Error re-enumerating devices:', enumError)
+          throw new Error('Failed to find camera device. Please refresh and try again.')
+        }
       }
-      // If no deviceId, getUserMedia will use default camera (acceptable)
       
+      if (!hasValidDeviceId) {
+        throw new Error('No valid camera device ID found. Please select a webcam device from the list.')
+      }
+      
+      // CRITICAL: Ensure we're requesting video from camera (videoinput), NOT screen capture
       // Use standard getUserMedia() for webcam - NO desktopCapturer
+      console.log('Requesting camera stream with constraints:', JSON.stringify(videoConstraints, null, 2))
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
         audio: settings.audioEnabled ? {
@@ -165,24 +249,69 @@ export const useRecording = () => {
         } : false
       })
       
-      // Verify that we got a video track from camera (not screen)
+      console.log('Got stream, tracks:', stream.getTracks().map(t => ({ kind: t.kind, label: t.label, enabled: t.enabled, muted: t.muted })))
+      
+      // CRITICAL: Verify that we got a video track from camera (not screen)
       const videoTrack = stream.getVideoTracks()[0]
       if (!videoTrack) {
         stream.getTracks().forEach(track => track.stop())
         throw new Error('No video track available from camera')
       }
       
+      console.log('Video track details:', {
+        kind: videoTrack.kind,
+        label: videoTrack.label,
+        enabled: videoTrack.enabled,
+        muted: videoTrack.muted,
+        readyState: videoTrack.readyState
+      })
+      
       // Double-check track label to ensure it's from camera, not screen
       const trackLabel = videoTrack.label.toLowerCase()
-      if (trackLabel.includes('screen') || trackLabel.includes('display') || trackLabel.includes('window') || trackLabel.includes('desktop')) {
+      const isScreenCapture = trackLabel.includes('screen') || 
+                              trackLabel.includes('display') || 
+                              trackLabel.includes('window') || 
+                              trackLabel.includes('desktop') ||
+                              trackLabel.includes('entire screen') ||
+                              trackLabel.includes('screen:')
+      
+      if (isScreenCapture) {
+        console.error('SCREEN CAPTURE DETECTED! Track label:', videoTrack.label)
         stream.getTracks().forEach(track => track.stop())
-        throw new Error('Screen capture detected instead of camera. Please ensure you selected a webcam device, not a screen source.')
+        throw new Error(`Screen capture detected instead of camera. Track label: "${videoTrack.label}". Please ensure you selected "Webcam Only" and selected a webcam device, not a screen source.`)
       }
       
-      // Verify track kind is 'videoinput' (camera), not screen capture
+      // Verify track kind is 'video' (camera input), not screen capture
+      // Screen capture tracks also have kind='video' but their label identifies them
       if (videoTrack.kind !== 'video') {
+        console.error('Invalid track kind:', videoTrack.kind)
         stream.getTracks().forEach(track => track.stop())
-        throw new Error('Invalid track kind - expected video input from camera')
+        throw new Error(`Invalid track kind "${videoTrack.kind}" - expected "video" from camera input`)
+      }
+      
+      // Additional validation: Check if we can get the actual device info
+      try {
+        const settings = videoTrack.getSettings()
+        console.log('Video track settings:', {
+          deviceId: settings.deviceId,
+          width: settings.width,
+          height: settings.height,
+          frameRate: settings.frameRate,
+          aspectRatio: settings.aspectRatio
+        })
+        
+        // Verify deviceId is present and not a screen source ID
+        if (settings.deviceId) {
+          const deviceId = settings.deviceId.toLowerCase()
+          if (deviceId.includes('screen') || deviceId.includes('window') || deviceId.includes('display')) {
+            console.error('Screen deviceId detected in track settings:', settings.deviceId)
+            stream.getTracks().forEach(track => track.stop())
+            throw new Error(`Screen device detected. Device ID: "${settings.deviceId}". Please select a webcam device.`)
+          }
+        }
+      } catch (settingsError) {
+        console.warn('Could not get track settings:', settingsError)
+        // Continue anyway - settings might not be available in all browsers
       }
       
       // Create MediaRecorder
