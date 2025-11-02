@@ -212,7 +212,7 @@ function Editor() {
         totalTime={exportState.progress.totalTime}
         speed={exportState.progress.speed}
         eta={exportState.progress.eta}
-        error={exportState.error}
+        error={exportState.error ?? undefined}
       />
       
       <RecordingModal
