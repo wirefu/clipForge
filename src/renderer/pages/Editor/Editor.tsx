@@ -5,7 +5,7 @@ import { RootState } from '../../store'
 import { startExport, updateProgress, finishExport, cancelExport, setExportError } from '../../store/slices/export.slice'
 import { addClip, updateClip, selectClip, setPlayheadPosition } from '../../store/slices/timeline.slice'
 import MediaLibrary from '../../components/MediaLibrary/MediaLibrary'
-import VideoPreview from '../../components/VideoPreview/VideoPreview'
+import TimelinePreview from '../../components/VideoPreview/TimelinePreview'
 import Timeline from '../../components/Timeline/Timeline'
 import Toolbar from '../../components/Toolbar/Toolbar'
 import ExportModal from '../../components/ExportModal/ExportModal'
@@ -61,6 +61,20 @@ function Editor() {
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying)
   }
+
+  // Keyboard shortcuts for play/pause
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Space bar toggles play/pause (when not typing in an input)
+      if (e.key === ' ' && e.target instanceof HTMLElement && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault()
+        setIsPlaying(prev => !prev)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleTimeUpdate = (time: number) => {
     setCurrentTime(time)
@@ -159,14 +173,12 @@ function Editor() {
         </div>
         
         <div className="editor-center">
-          <VideoPreview 
-            media={selectedMedia}
+          <TimelinePreview 
+            clips={timelineClips}
+            mediaFiles={mediaFiles}
             isPlaying={isPlaying}
             currentTime={currentTime}
             onTimeUpdate={handleTimeUpdate}
-            trimStart={trimStart}
-            trimEnd={trimEnd}
-            clipStart={clipStart}
             onPlaybackEnd={handlePlaybackEnd}
           />
         </div>
