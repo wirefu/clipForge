@@ -331,11 +331,37 @@ export const useRecording = () => {
         // Continue anyway - settings might not be available in all browsers
       }
       
-      // Create MediaRecorder
+      // CRITICAL: Verify one more time that we have the camera stream (not screen)
+      // Log stream tracks before creating MediaRecorder
+      console.log('🎥 Creating MediaRecorder with stream tracks:', stream.getTracks().map(t => ({
+        kind: t.kind,
+        label: t.label,
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      })))
+      
+      // Double-check: Ensure we're recording the camera stream, not screen
+      const videoTracks = stream.getVideoTracks()
+      if (videoTracks.length > 0) {
+        const trackLabel = videoTracks[0].label.toLowerCase()
+        if (trackLabel.includes('screen') || trackLabel.includes('display') || trackLabel.includes('window')) {
+          console.error('❌ ERROR: Screen capture detected in stream before MediaRecorder creation!')
+          stream.getTracks().forEach(track => track.stop())
+          throw new Error('Screen capture stream detected. This should not happen with webcam recording.')
+        }
+        console.log('✅ Confirmed: Camera stream verified before MediaRecorder creation')
+        console.log('📹 Recording from:', videoTracks[0].label)
+      }
+      
+      // Create MediaRecorder with camera stream
+      console.log('🎬 Creating MediaRecorder with camera stream (NOT screen)')
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
         videoBitsPerSecond: settings.bitrate * 1000
       })
+      
+      console.log('✅ MediaRecorder created successfully with camera stream')
       
       // Generate output path
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
