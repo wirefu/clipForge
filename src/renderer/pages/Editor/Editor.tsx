@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { MediaFile, TimelineClip } from '../../types'
 import { RootState } from '../../store'
 import { startExport, updateProgress, finishExport, cancelExport, setExportError } from '../../store/slices/export.slice'
-import { addClip, updateClip, selectClip, setPlayheadPosition } from '../../store/slices/timeline.slice'
+import { addClip, updateClip, setPlayheadPosition } from '../../store/slices/timeline.slice'
 import MediaLibrary from '../../components/MediaLibrary/MediaLibrary'
 import TimelinePreview from '../../components/VideoPreview/TimelinePreview'
 import Timeline from '../../components/Timeline/Timeline'
@@ -25,7 +25,6 @@ function Editor() {
   const mediaFiles = useSelector((state: RootState) => state.mediaLibrary.mediaFiles)
   const timelineState = useSelector((state: RootState) => state.timeline)
   const timelineClips = timelineState.clips
-  const selectedClipId = timelineState.selectedClipId
 
   // Set up IPC listeners for export progress
   React.useEffect(() => {
