@@ -84,7 +84,8 @@ const timelineSlice = createSlice({
       state.playheadPosition = action.payload
     },
     setZoomLevel: (state, action: PayloadAction<number>) => {
-      state.zoomLevel = Math.max(0.1, Math.min(10, action.payload))
+      // zoomLevel is in pixels per second, valid range: 10 to 500
+      state.zoomLevel = Math.max(10, Math.min(500, action.payload))
     },
     setTotalDuration: (state, action: PayloadAction<number>) => {
       state.totalDuration = action.payload
