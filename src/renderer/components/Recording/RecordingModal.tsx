@@ -150,6 +150,14 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         webcamDeviceId: recordingType === 'webcam' || recordingType === 'both' ? selectedWebcamId : undefined
       }
 
+      console.log('🚀 Starting recording with fullSettings:', {
+        recordingType,
+        sourceType,
+        sourceId,
+        selectedWebcamId,
+        selectedSourceId,
+        webcamDeviceId: fullSettings.webcamDeviceId
+      })
 
       await startRecording(fullSettings)
     } catch (err: any) {
