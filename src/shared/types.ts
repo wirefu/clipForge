@@ -1,9 +1,12 @@
 // Shared types for ClipForge
 // These types are used across main and renderer processes
 
-// Re-export export types
+// Re-export export types first so they're available for use below
 export * from '../renderer/types/export.types'
 export * from '../renderer/types/recording.types'
+
+// Import types needed for definitions in this file
+import type { ExportSettings } from '../renderer/types/export.types'
 
 export interface MediaFile {
   id: string
@@ -65,27 +68,7 @@ export interface TimelineState {
 }
 
 // RecordingSource and RecordingSettings are exported from recording.types.ts above
-
-export interface ExportSettings {
-  outputPath: string
-  format: 'mp4' | 'mov' | 'avi'
-  quality: 'low' | 'medium' | 'high' | 'custom'
-  resolution: {
-    width: number
-    height: number
-  }
-  frameRate: number
-  bitrate?: number
-  audioCodec?: string
-  videoCodec?: string
-}
-
-export interface ExportProgress {
-  status: 'idle' | 'preparing' | 'exporting' | 'completed' | 'error'
-  progress: number // 0-100
-  message: string
-  error?: string
-}
+// ExportSettings and ExportProgress are exported from export.types.ts above
 
 export interface ProjectData {
   id: string
@@ -94,7 +77,7 @@ export interface ProjectData {
   modifiedAt: Date
   timeline: TimelineState
   mediaFiles: MediaFile[]
-  exportSettings: ExportSettings
+  exportSettings: ExportSettings // From export.types.ts
 }
 
 // IPC Request/Response types

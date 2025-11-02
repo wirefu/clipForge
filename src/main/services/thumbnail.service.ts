@@ -138,7 +138,8 @@ export class ThumbnailService {
         quality = 5
       } = options
 
-      const fileHash = this.createFileHash(videoPath, { ...options, count })
+      // Create file hash including count for strip thumbnails
+      const fileHash = this.createFileHash(videoPath, { ...options, count: count })
       const thumbnailDir = path.join(this.cacheDir, `${fileHash}_strip`)
       
       // Create directory for strip thumbnails
@@ -169,8 +170,8 @@ export class ThumbnailService {
                 '-f', 'image2'
               ])
               .output(thumbnailPath)
-              .on('end', resolve)
-              .on('error', reject)
+              .on('end', () => resolve(undefined))
+              .on('error', (err: Error) => reject(err))
               .run()
           })
         )
@@ -242,7 +243,7 @@ export class ThumbnailService {
   /**
    * Create a hash for caching based on file path and options
    */
-  private createFileHash(filePath: string, options: ThumbnailOptions): string {
+  private createFileHash(filePath: string, options: ThumbnailOptions & { count?: number }): string {
     const crypto = require('crypto')
     const content = `${filePath}-${JSON.stringify(options)}`
     return crypto.createHash('md5').update(content).digest('hex')

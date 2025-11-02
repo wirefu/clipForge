@@ -1,6 +1,6 @@
 import { spawn, ChildProcess } from 'child_process'
 import { join } from 'path'
-import { ExportSettings, ExportClip, ExportTimeline } from '../../shared/types/export.types'
+import { ExportSettings, ExportClip, ExportTimeline } from '../../shared/types'
 
 export interface FFmpegProgress {
   progress: number

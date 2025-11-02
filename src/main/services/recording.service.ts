@@ -280,7 +280,7 @@ export class RecordingService {
       this.outputPath = null
       this.recordingProcess = null
 
-      return { success: true, outputPath }
+      return { success: true, outputPath: outputPath || undefined }
 
     } catch (error) {
       console.error('Error stopping recording:', error)

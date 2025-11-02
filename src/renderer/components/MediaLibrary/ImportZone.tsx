@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { useAppDispatch } from '../../store/hooks'
 import { addMediaFile, setLoading, setError } from '../../store/slices/mediaLibrary.slice'
-import { MediaFile, ImportResult } from '../types/media.types'
+import { MediaFile, ImportResult } from '../../types'
 import './ImportZone.css'
 
 interface ImportZoneProps {

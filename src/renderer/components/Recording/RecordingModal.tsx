@@ -85,10 +85,66 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   // Separate sources for PIP mode
   const screenSources = sources.filter(s => s.type === 'screen' || s.type === 'window')
   const webcamSources = sources.filter(s => s.type === 'webcam')
+  
+  // Debug logging
+  useEffect(() => {
+    if (recordingType === 'webcam') {
+      console.log('📹 Webcam mode active:', {
+        totalSources: sources.length,
+        webcamSources: webcamSources.length,
+        availableSources: availableSources.length,
+        selectedSourceId,
+        selectedSource: selectedSource?.name
+      })
+    }
+  }, [recordingType, sources, webcamSources, availableSources, selectedSourceId, selectedSource])
+
+  // Preserve webcam selection after refresh
+  const [pendingRefresh, setPendingRefresh] = useState(false)
+  const [preservedDeviceId, setPreservedDeviceId] = useState<string | null>(null)
+  
+  // Auto-select first webcam when switching to webcam mode
+  useEffect(() => {
+    if (recordingType === 'webcam' && webcamSources.length > 0 && !selectedSourceId) {
+      const firstWebcam = webcamSources[0]
+      if (firstWebcam) {
+        console.log('📹 Auto-selecting first webcam:', firstWebcam)
+        setSelectedSourceState(firstWebcam)
+        setSelectedSource(firstWebcam.id)
+      }
+    }
+  }, [recordingType, webcamSources, selectedSourceId, setSelectedSource])
+  
+  // Restore selection after refresh
+  useEffect(() => {
+    if (pendingRefresh && webcamSources.length > 0 && preservedDeviceId) {
+      // Wait a tick for state to settle after refresh
+      const timeoutId = setTimeout(() => {
+        const matchingSource = webcamSources.find(s => s.deviceId === preservedDeviceId)
+        if (matchingSource) {
+          console.log('📹 Restoring webcam selection after refresh:', matchingSource)
+          setSelectedSourceState(matchingSource)
+          setSelectedSource(matchingSource.id)
+        }
+        setPendingRefresh(false)
+        setPreservedDeviceId(null)
+      }, 100) // Small delay to ensure sources are fully updated
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [pendingRefresh, webcamSources, preservedDeviceId, selectedSourceId, setSelectedSource])
 
   const handleSourceSelect = (source: RecordingSource) => {
     setSelectedSourceState(source)
     setSelectedSource(source.id)
+    // Log for debugging
+    if (source.type === 'webcam') {
+      console.log('📹 Webcam source selected:', {
+        id: source.id,
+        name: source.name,
+        deviceId: source.deviceId
+      })
+    }
   }
 
   const handleStartRecording = async () => {
@@ -259,12 +315,14 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                   </button>
                   <button
                     className={`type-btn ${recordingType === 'webcam' ? 'active' : ''}`}
-                    onClick={() => {
+                    onClick={async () => {
                       setRecordingType('webcam')
                       setSelectedSourceState(null)
                       setSelectedScreenSource(null)
                       setSelectedWebcamSource(null)
                       setSelectedSource('')
+                      // Ensure webcam devices are loaded when switching to webcam mode
+                      await recordingHook.refreshSources()
                     }}
                   >
                     📹 Webcam
@@ -357,20 +415,70 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                   <h3>{recordingType === 'screen' ? 'Screen Source' : 'Webcam Device'}</h3>
                   {recordingType === 'webcam' && (
                     <div style={{ marginBottom: '16px' }}>
-                      <WebcamPreview
-                        deviceId={selectedSourceId || undefined}
-                        isActive={!!selectedSourceId && !isRecording}
-                        width={640}
-                        height={360}
-                      />
-                    </div>
-                  )}
-                  {recordingType === 'webcam' && availableSources.length === 0 && (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
-                      <p>No webcam devices found.</p>
-                      <p style={{ fontSize: '12px', marginTop: '8px' }}>
-                        Make sure your camera is connected and check browser permissions.
-                      </p>
+                      {webcamSources.length > 0 ? (() => {
+                        // Get deviceId from selected source, or use first webcam if none selected
+                        let deviceId = selectedSource?.deviceId || webcamSources.find(s => s.id === selectedSourceId)?.deviceId
+                        
+                        // Always use first webcam if no deviceId is found (for preview)
+                        if (!deviceId && webcamSources.length > 0) {
+                          const firstWebcam = webcamSources[0]
+                          deviceId = firstWebcam.deviceId
+                          console.log('📹 Using first webcam for preview:', firstWebcam)
+                        }
+                        
+                        // Preview should be active if in webcam mode and not recording, and we have a deviceId
+                        const isActive = recordingType === 'webcam' && !isRecording && !!deviceId
+                        console.log('📹 WebcamPreview props:', { 
+                          deviceId, 
+                          isActive, 
+                          selectedSourceId, 
+                          webcamSourcesCount: webcamSources.length,
+                          selectedSource: selectedSource?.name,
+                          firstWebcam: webcamSources[0]?.name,
+                          recordingType,
+                          isRecording
+                        })
+                        
+                        return (
+                          <WebcamPreview
+                            deviceId={deviceId}
+                            isActive={isActive}
+                            width={640}
+                            height={360}
+                            key={`webcam-${deviceId || 'none'}-${selectedSourceId || 'none'}`}
+                          />
+                        )
+                      })() : (
+                        <div style={{ padding: '20px', textAlign: 'center', color: '#888', border: '2px dashed #444', borderRadius: '8px' }}>
+                          <p style={{ fontSize: '14px', marginBottom: '8px' }}>📹 No webcam devices found</p>
+                          <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                            Make sure your camera is connected and check browser permissions.
+                          </p>
+                          <button 
+                            onClick={async () => {
+                              // Preserve current selection before refresh
+                              const currentDeviceId = selectedSource?.deviceId || webcamSources.find(s => s.id === selectedSourceId)?.deviceId
+                              if (currentDeviceId) {
+                                console.log('📹 Preserving device ID before refresh:', currentDeviceId)
+                                setPreservedDeviceId(currentDeviceId)
+                                setPendingRefresh(true)
+                              }
+                              await recordingHook.refreshSources()
+                            }}
+                            style={{ 
+                              marginTop: '12px', 
+                              padding: '8px 16px', 
+                              background: '#007acc', 
+                              color: '#fff', 
+                              border: 'none', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer' 
+                            }}
+                          >
+                            🔄 Refresh Devices
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                   <SourceSelector

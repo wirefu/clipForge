@@ -120,7 +120,7 @@ function ExportModal({
     try {
       const result = await window.electronAPI.export.selectOutputDir()
       if (result.success && result.outputPath) {
-        setSettings(prev => ({ ...prev, outputPath: result.outputPath }))
+        setSettings(prev => ({ ...prev, outputPath: result.outputPath! }))
       }
     } catch (error) {
       console.error('Failed to select output path:', error)

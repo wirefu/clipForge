@@ -19,6 +19,7 @@ export const WebcamPreview: React.FC<WebcamPreviewProps> = ({
   const isStartingRef = useRef(false) // Track if we're currently starting the preview
 
   useEffect(() => {
+    // Only stop if truly inactive (not just missing deviceId temporarily)
     if (!isActive) {
       // Stop stream when preview is not active
       if (streamRef.current) {
@@ -30,6 +31,11 @@ export const WebcamPreview: React.FC<WebcamPreviewProps> = ({
         videoRef.current.pause()
       }
       isStartingRef.current = false
+      return
+    }
+
+    // If active but no deviceId yet, wait for it (don't stop existing stream)
+    if (!deviceId) {
       return
     }
 
@@ -60,9 +66,10 @@ export const WebcamPreview: React.FC<WebcamPreviewProps> = ({
           height: { ideal: height }
         }
         
-        // Use 'ideal' for deviceId instead of 'exact' to avoid OverconstrainedError
+        // Use 'exact' for deviceId to ensure we get the right camera
+        // If getUserMedia fails with exact, we'll fall back to ideal
         if (deviceId) {
-          videoConstraints.deviceId = { ideal: deviceId }
+          videoConstraints.deviceId = { exact: deviceId }
         }
         
         const constraints: MediaStreamConstraints = {
@@ -70,7 +77,30 @@ export const WebcamPreview: React.FC<WebcamPreviewProps> = ({
           audio: false
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
+        console.log('📹 WebcamPreview: Requesting camera with constraints:', JSON.stringify(constraints, null, 2))
+        
+        let stream: MediaStream
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints)
+          console.log('✅ WebcamPreview: Successfully got camera stream')
+        } catch (exactError: any) {
+          // If exact deviceId fails, try with ideal instead
+          if (deviceId && exactError.name === 'OverconstrainedError') {
+            console.warn('⚠️ WebcamPreview: Exact deviceId failed, trying with ideal:', exactError.message)
+            const fallbackConstraints: MediaStreamConstraints = {
+              video: {
+                deviceId: { ideal: deviceId },
+                width: { ideal: width },
+                height: { ideal: height }
+              },
+              audio: false
+            }
+            stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints)
+            console.log('✅ WebcamPreview: Successfully got camera stream with ideal deviceId')
+          } else {
+            throw exactError
+          }
+        }
         
         // Verify it's a video stream
         const videoTrack = stream.getVideoTracks()[0]
@@ -150,9 +180,24 @@ export const WebcamPreview: React.FC<WebcamPreviewProps> = ({
         } else {
           isStartingRef.current = false
         }
-      } catch (error) {
-        console.error('Error starting webcam preview:', error)
+      } catch (error: any) {
+        console.error('❌ WebcamPreview: Error starting camera preview:', {
+          error: error.name,
+          message: error.message,
+          deviceId,
+          isActive,
+          constraints: JSON.stringify(constraints, null, 2)
+        })
         isStartingRef.current = false
+        
+        // Show error message to user
+        if (videoRef.current && videoRef.current.parentElement) {
+          const errorDiv = document.createElement('div')
+          errorDiv.style.cssText = 'padding: 20px; text-align: center; color: #ff6b6b; background: #2a2a2a; border-radius: 8px;'
+          errorDiv.textContent = `Camera Error: ${error.message || error.name}`
+          videoRef.current.parentElement.appendChild(errorDiv)
+          setTimeout(() => errorDiv.remove(), 5000)
+        }
       }
     }
 

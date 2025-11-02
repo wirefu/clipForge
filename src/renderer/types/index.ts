@@ -9,7 +9,8 @@ import type {
   ExportSettings,
   ExportProgress,
   ProjectData,
-  AppInfo
+  AppInfo,
+  ImportResult
 } from '../../shared/types'
 
 // Re-export shared types for convenience
@@ -23,7 +24,8 @@ export type {
   ExportSettings,
   ExportProgress,
   ProjectData,
-  AppInfo
+  AppInfo,
+  ImportResult
 }
 
 // Simple component prop interfaces that work with existing types

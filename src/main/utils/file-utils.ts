@@ -133,7 +133,7 @@ export async function getVideoMetadata(filePath: string): Promise<MediaMetadata>
     }
     
     // Use ffprobe directly to avoid fluent-ffmpeg's show_streams bug
-    return new Promise<MediaMetadata>((resolve, reject) => {
+    return new Promise<MediaMetadata>((resolve) => {
       // Call ffprobe directly via spawn (not ffmpeg!)
       const ffprobeProcess = spawn(ffprobePath, [
         '-v', 'error',
@@ -316,7 +316,7 @@ export async function createMediaFile(filePath: string): Promise<MediaFile> {
     // Extract both metadata and duration in a single ffprobe call
     try {
       // Call ffprobe directly to avoid fluent-ffmpeg's show_streams bug
-      const probeResult = await new Promise<{ metadata: MediaMetadata; duration: number }>((resolve, reject) => {
+      const probeResult = await new Promise<{ metadata: MediaMetadata; duration: number }>((resolve) => {
         // Use ffprobe directly via spawn (not ffmpeg!)
         const ffprobeProcess = spawn(ffprobePath, [
           '-v', 'error',
@@ -559,12 +559,12 @@ export async function createMediaFile(filePath: string): Promise<MediaFile> {
  * Generates a thumbnail for a video file
  * Note: This is a placeholder implementation. In a real app, you'd use ffmpeg
  */
-export async function generateThumbnail(filePath: string, timestamp: number = 1): Promise<string> {
+export async function generateThumbnail(filePath: string, _timestamp: number = 1): Promise<string> {
   // Placeholder implementation
   // In a real app, you'd use ffmpeg to extract a frame at the specified timestamp
   // and return the path to the generated thumbnail file
   
-  const filename = basename(filePath, extname(filePath))
+  // const filename = basename(filePath, extname(filePath))
   const thumbnailPath = `${filePath}.thumb.jpg`
   
   // For now, return a placeholder data URL

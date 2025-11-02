@@ -2,7 +2,7 @@ import { ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
 import { ffmpegService, FFmpegProgress } from '../services/ffmpeg.service'
-import { ExportSettings, ExportTimeline, ExportClip } from '../../shared/types/export.types'
+import { ExportSettings, ExportTimeline, ExportClip } from '../../shared/types'
 import { TimelineClip } from '../../shared/types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
 
@@ -53,7 +53,7 @@ export function registerExportHandlers() {
   if (ipcMain.listenerCount(IPC_CHANNELS.EXPORT.START_EXPORT) > 0) {
     console.log('Export handlers already registered, removing old handlers...')
     ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.START_EXPORT)
-    ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.STOP_EXPORT)
+    // STOP_EXPORT channel doesn't exist - use CANCEL_EXPORT instead
     ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.GET_EXPORT_STATUS)
     ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.GET_PRESETS)
     ipcMain.removeAllListeners(IPC_CHANNELS.EXPORT.SELECT_OUTPUT_DIR)
