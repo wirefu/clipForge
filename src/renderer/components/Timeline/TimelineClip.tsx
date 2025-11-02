@@ -6,12 +6,13 @@ import './TimelineClip.css'
 interface TimelineClipProps {
   clip: TimelineClipType
   timelineWidth: number
+  totalDuration: number
   onUpdateClip: (clipId: string, updates: Partial<TimelineClipType>) => void
   onSelectClip: (clipId: string) => void
   isSelected: boolean
 }
 
-function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelected }: TimelineClipProps) {
+function TimelineClip({ clip, timelineWidth, totalDuration, onUpdateClip, onSelectClip, isSelected }: TimelineClipProps) {
   const [isDragging, setIsDragging] = useState<'left' | 'right' | 'center' | null>(null)
   const [dragStart, setDragStart] = useState({ x: 0, trimStart: 0, trimEnd: 0 })
   const clipRef = useRef<HTMLDivElement>(null)
@@ -34,22 +35,23 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
     if (!isDragging || !clipRef.current) return
 
     const deltaX = e.clientX - dragStart.x
-    const deltaTime = (deltaX / timelineWidth) * 100 // Convert to percentage of timeline
+    const deltaPercentage = (deltaX / timelineWidth) * 100
+    const deltaTimeInSeconds = (deltaPercentage / 100) * totalDuration
 
     if (isDragging === 'left') {
-      // Dragging left handle (trim start)
-      const newTrimStart = Math.max(0, Math.min(dragStart.trimStart + deltaTime, clip.trimEnd - 0.1))
+      // Dragging left handle (trim start) - trimStart is in seconds
+      const newTrimStart = Math.max(0, Math.min(dragStart.trimStart + deltaTimeInSeconds, clip.trimEnd - 0.1))
       onUpdateClip(clip.id, { trimStart: newTrimStart })
     } else if (isDragging === 'right') {
-      // Dragging right handle (trim end)
-      const newTrimEnd = Math.max(dragStart.trimEnd + deltaTime, clip.trimStart + 0.1)
+      // Dragging right handle (trim end) - trimEnd is in seconds
+      const newTrimEnd = Math.max(dragStart.trimEnd + deltaTimeInSeconds, clip.trimStart + 0.1)
       onUpdateClip(clip.id, { trimEnd: Math.min(newTrimEnd, clip.duration) })
     } else if (isDragging === 'center') {
-      // Dragging entire clip
-      const newStart = Math.max(0, Math.min(clip.start + deltaTime, 100 - clip.duration))
+      // Dragging entire clip - start is in seconds
+      const newStart = Math.max(0, Math.min(clip.start + deltaTimeInSeconds, totalDuration - clip.duration))
       onUpdateClip(clip.id, { start: newStart })
     }
-  }, [isDragging, dragStart, timelineWidth, clip.id, clip.trimEnd, clip.trimStart, clip.duration, clip.start, onUpdateClip])
+  }, [isDragging, dragStart, timelineWidth, totalDuration, clip.id, clip.trimEnd, clip.trimStart, clip.duration, clip.start, onUpdateClip])
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(null)
@@ -71,19 +73,17 @@ function TimelineClip({ clip, timelineWidth, onUpdateClip, onSelectClip, isSelec
   const trimStartPercentage = getTrimStartPercentage(clip)
   const trimEndPercentage = getTrimEndPercentage(clip)
 
-  // Calculate visual positions
-  const clipLeft = clip.start
-  const clipWidth = clip.duration
-  const trimmedLeft = clipLeft + (clipWidth * trimStartPercentage)
-  const trimmedWidth = clipWidth * (trimmedDuration / clip.duration)
+  // Convert clip positions from seconds to percentages based on total duration
+  const clipLeftPercentage = (clip.start / totalDuration) * 100
+  const clipWidthPercentage = (clip.duration / totalDuration) * 100
 
   return (
     <div
       ref={clipRef}
       className={`timeline-clip ${isSelected ? 'selected' : ''}`}
       style={{
-        left: `${clipLeft}%`,
-        width: `${clipWidth}%`
+        left: `${clipLeftPercentage}%`,
+        width: `${clipWidthPercentage}%`
       }}
       onClick={(e) => {
         e.stopPropagation()

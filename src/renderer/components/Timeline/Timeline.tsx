@@ -16,14 +16,24 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
   const timelineRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
+  // Calculate actual total duration from clips (in seconds)
+  const calculateTotalDuration = () => {
+    if (clips.length === 0) return 100 // Default to 100 seconds if no clips
+    const maxEndTime = Math.max(...clips.map(clip => clip.start + clip.duration))
+    return Math.max(100, Math.ceil(maxEndTime / 10) * 10) // Round up to nearest 10 seconds, minimum 100
+  }
+
+  const totalDuration = calculateTotalDuration()
+
   const handleTimelineClick = (e: React.MouseEvent) => {
     if (timelineRef.current) {
       const rect = timelineRef.current.getBoundingClientRect()
       const clickX = e.clientX - rect.left
       const timelineWidth = rect.width
-      const timePosition = (clickX / timelineWidth) * 100 // Convert to percentage
+      const percentage = (clickX / timelineWidth) * 100
+      const timeInSeconds = (percentage / 100) * totalDuration
       
-      onTimeUpdate(timePosition)
+      onTimeUpdate((timeInSeconds / totalDuration) * 100)
     }
   }
 
@@ -32,9 +42,10 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
       const rect = timelineRef.current.getBoundingClientRect()
       const dragX = e.clientX - rect.left
       const timelineWidth = rect.width
-      const timePosition = Math.max(0, Math.min(100, (dragX / timelineWidth) * 100))
+      const percentage = Math.max(0, Math.min(100, (dragX / timelineWidth) * 100))
+      const timeInSeconds = (percentage / 100) * totalDuration
       
-      onTimeUpdate(timePosition)
+      onTimeUpdate((timeInSeconds / totalDuration) * 100)
     }
   }
 
@@ -74,17 +85,20 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
       const rect = timelineRef.current.getBoundingClientRect()
       const dropX = e.clientX - rect.left
       const timelineWidth = rect.width
-      const dropTime = (dropX / timelineWidth) * 100 // Convert to percentage
+      const percentage = (dropX / timelineWidth) * 100
+      const dropTimeInSeconds = (percentage / 100) * totalDuration
+      const mediaDuration = media.duration || 10
 
-      // Create a new timeline clip
+      // Create a new timeline clip (start and duration are in seconds)
+      // Allow clips to extend beyond current totalDuration - it will be recalculated on next render
       const newClip: import('../../types').TimelineClip = {
         id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         mediaFileId: media.id,
         trackId: 'track-1', // Default to first track
-        start: Math.max(0, Math.min(dropTime, 100 - (media.duration || 10))),
-        duration: media.duration || 10,
+        start: Math.max(0, dropTimeInSeconds),
+        duration: mediaDuration,
         trimStart: 0,
-        trimEnd: media.duration || 10,
+        trimEnd: mediaDuration,
         volume: 1,
         muted: false
       }
@@ -103,8 +117,7 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
 
   const generateTimeMarkers = () => {
     const markers = []
-    const totalDuration = 100 // Assuming 100 seconds for demo
-    const interval = 10 // Every 10 seconds
+    const interval = Math.max(10, Math.floor(totalDuration / 20)) // Adaptive interval, max 20 markers
     
     for (let i = 0; i <= totalDuration; i += interval) {
       markers.push({
@@ -127,7 +140,7 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
           <span className="zoom-level">100%</span>
         </div>
         <div className="timeline-info">
-          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime((currentTime / 100) * totalDuration)}</span>
           <span style={{ marginLeft: '20px', color: '#888' }}>
             Clips: {clips.length}
           </span>
@@ -169,6 +182,7 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
                   key={clip.id}
                   clip={clip}
                   timelineWidth={timelineRef.current?.offsetWidth || 800}
+                  totalDuration={totalDuration}
                   onUpdateClip={onUpdateClip || (() => {})}
                   onSelectClip={onSelectClip || (() => {})}
                   isSelected={selectedClipId === clip.id}
