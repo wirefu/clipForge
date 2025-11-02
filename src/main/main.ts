@@ -8,6 +8,31 @@ let mainWindow: BrowserWindow | null = null
 
 const isDev = process.env.NODE_ENV === 'development'
 
+// Wrap console methods to handle EPIPE gracefully
+const originalConsoleError = console.error
+const originalConsoleLog = console.log
+const originalConsoleWarn = console.warn
+
+function safeConsoleMethod(originalMethod: typeof console.error) {
+  return (...args: any[]) => {
+    try {
+      originalMethod.apply(console, args)
+    } catch (error: any) {
+      // Ignore EPIPE errors (broken pipe) - expected when streams are closed during refresh
+      if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+        // Re-throw non-EPIPE errors
+        throw error
+      }
+      // Silently ignore EPIPE errors
+    }
+  }
+}
+
+// Replace console methods with safe versions
+console.error = safeConsoleMethod(originalConsoleError) as typeof console.error
+console.log = safeConsoleMethod(originalConsoleLog) as typeof console.log
+console.warn = safeConsoleMethod(originalConsoleWarn) as typeof console.warn
+
 // Handle uncaught exceptions gracefully (especially EPIPE errors during refresh)
 process.on('uncaughtException', (error: Error) => {
   // Ignore EPIPE (broken pipe) errors that occur when streams are closed during refresh
@@ -16,8 +41,12 @@ process.on('uncaughtException', (error: Error) => {
     return
   }
   
-  // For other errors, log them but don't crash the app
-  console.error('Uncaught Exception:', error)
+  // For other errors, try to log them safely
+  try {
+    originalConsoleError('Uncaught Exception:', error)
+  } catch {
+    // Ignore if console is also unavailable
+  }
 })
 
 // Handle unhandled promise rejections
@@ -27,7 +56,11 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
     return
   }
   
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+  try {
+    originalConsoleError('Unhandled Rejection at:', promise, 'reason:', reason)
+  } catch {
+    // Ignore if console is also unavailable
+  }
 })
 
 function createWindow(): void {
