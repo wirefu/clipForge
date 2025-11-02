@@ -117,6 +117,8 @@ export const useRecording = () => {
   }, [dispatch])
 
   // Handle webcam recording using MediaRecorder
+  // IMPORTANT: For webcam, use standard navigator.mediaDevices.getUserMedia()
+  // Do NOT use desktopCapturer - that's only for screen/window capture
   const handleWebcamRecording = useCallback(async (settings: RecordingSettings) => {
     try {
       // Find the webcam source
@@ -126,27 +128,26 @@ export const useRecording = () => {
         return
       }
       
-      // Request camera access - ensure we use the correct deviceId
-      // Only use deviceId constraint if we have a valid deviceId
+      // For webcam: Use standard getUserMedia() with video constraints
+      // Do NOT use desktopCapturer - that's only for screen capture
       const videoConstraints: MediaTrackConstraints = {
         width: { ideal: settings.resolution.width },
         height: { ideal: settings.resolution.height },
         frameRate: { ideal: settings.framerate }
       }
       
-      // Add deviceId constraint only if it's a valid deviceId
-      // Prioritize source.deviceId over source.id, but ensure it's a valid deviceId string
-      if (source.deviceId && source.deviceId !== source.id && source.deviceId.length > 0) {
-        // Use deviceId if it exists and is different from the generic id
+      // Add deviceId constraint - prioritize actual deviceId from MediaDeviceInfo
+      // The deviceId should come from navigator.mediaDevices.enumerateDevices()
+      if (source.deviceId) {
+        // Use the actual deviceId from MediaDeviceInfo
         videoConstraints.deviceId = { exact: source.deviceId }
-      } else if (source.id && source.id.length > 20 && source.id.includes('videoinput')) {
-        // Use source.id if it looks like a valid deviceId (long string containing 'videoinput')
+      } else if (source.id && source.id !== `webcam-${recordingState.webcamDevices.indexOf(source)}`) {
+        // If source.id is not a generic id, use it as deviceId
         videoConstraints.deviceId = { exact: source.id }
-      } else {
-        // If no valid deviceId, getUserMedia will use the default camera
-        // This is acceptable - browser will prompt user if needed
       }
+      // If no deviceId, getUserMedia will use default camera (acceptable)
       
+      // Use standard getUserMedia() for webcam - NO desktopCapturer
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
         audio: settings.audioEnabled ? {
@@ -162,11 +163,17 @@ export const useRecording = () => {
         throw new Error('No video track available from camera')
       }
       
-      // Check track label to ensure it's from camera, not screen
+      // Double-check track label to ensure it's from camera, not screen
       const trackLabel = videoTrack.label.toLowerCase()
-      if (trackLabel.includes('screen') || trackLabel.includes('display') || trackLabel.includes('window')) {
+      if (trackLabel.includes('screen') || trackLabel.includes('display') || trackLabel.includes('window') || trackLabel.includes('desktop')) {
         stream.getTracks().forEach(track => track.stop())
-        throw new Error('Screen capture detected instead of camera. Please ensure camera permissions are granted.')
+        throw new Error('Screen capture detected instead of camera. Please ensure you selected a webcam device, not a screen source.')
+      }
+      
+      // Verify track kind is 'videoinput' (camera), not screen capture
+      if (videoTrack.kind !== 'video') {
+        stream.getTracks().forEach(track => track.stop())
+        throw new Error('Invalid track kind - expected video input from camera')
       }
       
       // Create MediaRecorder
@@ -204,6 +211,15 @@ export const useRecording = () => {
       }
       
       mediaRecorder.onstop = async () => {
+        // IMPORTANT: Stop the camera stream FIRST before processing blob
+        // This ensures the camera turns off immediately after recording stops
+        if (stream) {
+          stream.getTracks().forEach(track => {
+            track.stop()
+            console.log('Stopped track:', track.kind, track.label)
+          })
+        }
+        
         const blob = new Blob(chunks, { type: 'video/webm' })
         
         if (blob.size > 0) {
@@ -242,9 +258,6 @@ export const useRecording = () => {
           console.error('No data recorded - blob is empty')
           dispatch(setRecordingError('No data was recorded'))
         }
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop())
         
         // Clear the global references
         ;(window as any).currentMediaRecorder = null
