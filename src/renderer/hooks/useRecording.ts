@@ -87,17 +87,26 @@ export const useRecording = () => {
   }, [dispatch])
 
   // Load webcam devices using navigator.mediaDevices
+  // IMPORTANT: Do NOT keep camera on - only request permission, then stop immediately
   const loadWebcamDevices = useCallback(async () => {
     try {
-      // First, request permission to access camera
+      // First, request permission to access camera (needed to get device labels)
+      // IMPORTANT: Stop stream IMMEDIATELY after getting permission - don't keep camera on
+      let permissionStream: MediaStream | null = null
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
-        stream.getTracks().forEach(track => track.stop())
+        permissionStream = await navigator.mediaDevices.getUserMedia({ video: true })
+        // Stop stream IMMEDIATELY - camera should not stay on
+        permissionStream.getTracks().forEach(track => {
+          track.stop()
+          console.log('Stopped permission track:', track.kind, track.label)
+        })
+        permissionStream = null
       } catch (permissionError) {
-        // Permission denied or no webcam available
+        // Permission denied or no webcam available - that's OK
+        console.log('Permission request result:', permissionError)
       }
       
-      // Now enumerate devices
+      // Now enumerate devices (labels will be available if permission was granted)
       const devices = await navigator.mediaDevices.enumerateDevices()
       const videoDevices = devices.filter(device => device.kind === 'videoinput')
       

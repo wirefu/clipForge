@@ -17,11 +17,15 @@ export const WebcamPreview: React.FC<WebcamPreviewProps> = ({
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    // IMPORTANT: Only start webcam stream when actively recording
+    // Do NOT start stream for preview/selection before recording starts
+    // isActive should ONLY be true when recording is actually happening
     if (!isActive || !deviceId) {
       stopStream()
       return
     }
 
+    // Only start stream if we're actively recording (not just previewing)
     startStream()
 
     return () => {
