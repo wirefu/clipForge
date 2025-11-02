@@ -274,16 +274,30 @@ export const useRecording = () => {
             ;(window as any).currentTimerInterval = null
           }
           
-          // Stop MediaRecorder
-          if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop()
+          // Stop MediaRecorder (handle both 'recording' and 'paused' states)
+          if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
+            // Create a promise that resolves when onstop completes
+            await new Promise<void>((resolve) => {
+              const originalOnStop = mediaRecorder.onstop
+              mediaRecorder.onstop = async () => {
+                if (originalOnStop) {
+                  await originalOnStop()
+                }
+                resolve()
+              }
+              mediaRecorder.stop()
+            })
+            
+            // Notify main process that webcam recording stopped
+            await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
+            
+            // Dispatch stop recording to update Redux state (after onstop completes)
+            dispatch(stopRecording())
+          } else {
+            // If MediaRecorder is not running, just update state
+            await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
+            dispatch(stopRecording())
           }
-          
-          // Notify main process that webcam recording stopped
-          await window.electronAPI.recording.setWebcamStatus({ isRecording: false, duration: 0 })
-          
-          // Dispatch stop recording to update Redux state
-          dispatch(stopRecording())
         } else {
           // Stop screen recording
           const result = await window.electronAPI.recording.stopRecording()
