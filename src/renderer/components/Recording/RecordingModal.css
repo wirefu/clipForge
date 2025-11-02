@@ -72,6 +72,40 @@
   overflow-y: auto;
 }
 
+.recording-type-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 12px 24px;
+  background: #2a2a2a;
+  border: 2px solid #444;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  background: #333;
+  border-color: #555;
+}
+
+.type-btn.active {
+  background: #007acc;
+  border-color: #00d4ff;
+  color: #fff;
+}
+
+.type-btn.active:hover {
+  background: #0088dd;
+}
+
 .recording-section {
   margin-bottom: 24px;
 }

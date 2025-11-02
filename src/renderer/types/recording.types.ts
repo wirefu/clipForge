@@ -4,16 +4,18 @@
 export interface RecordingSource {
   id: string
   name: string
-  type: 'screen' | 'window'
+  type: 'screen' | 'window' | 'webcam'
   thumbnail?: string
   isAvailable: boolean
   displayId?: string // For screen sources
   windowId?: string // For window sources
+  deviceId?: string // For webcam sources
+  facingMode?: 'user' | 'environment' // For webcam sources
 }
 
 export interface RecordingSettings {
   sourceId: string
-  sourceType: 'screen' | 'window'
+  sourceType: 'screen' | 'window' | 'webcam'
   resolution: {
     width: number
     height: number
@@ -26,6 +28,7 @@ export interface RecordingSettings {
   filename: string
   format: 'mp4' | 'mov' | 'avi'
   quality: 'low' | 'medium' | 'high' | 'ultra'
+  webcamDeviceId?: string // Specific webcam device ID
 }
 
 export interface RecordingState {

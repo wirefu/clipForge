@@ -59,6 +59,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     
     selectOutputFile: (defaultFilename: string): Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }> => 
       ipcRenderer.invoke('recording:select-output-file', { defaultFilename }),
+    
+    saveWebcamRecording: (data: { buffer: ArrayBuffer | Buffer; filePath: string }): Promise<{ success: boolean; outputPath?: string; error?: string }> => 
+      ipcRenderer.invoke('recording:save-webcam-recording', data),
   },
   
   // Timeline operations
@@ -180,7 +183,7 @@ declare global {
         selectOutputDir: () => Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }>
         selectOutputFile: (defaultFilename: string) => Promise<{ success: boolean; outputPath?: string; cancelled?: boolean }>
         setWebcamStatus: (status: { isRecording: boolean; duration?: number }) => Promise<{ success: boolean }>
-        saveWebcamRecording: (data: { buffer: Buffer; filePath: string }) => Promise<{ success: boolean; outputPath?: string; error?: string }>
+        saveWebcamRecording: (data: { buffer: ArrayBuffer | Buffer; filePath: string }) => Promise<{ success: boolean; outputPath?: string; error?: string }>
       }
       timeline: {
         addClip: (mediaFile: MediaFile, trackId: string, startTime: number) => Promise<void>

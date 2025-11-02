@@ -201,4 +201,54 @@ export function registerRecordingHandlers() {
     }
   })
 
+  // Save webcam recording (receives blob data from renderer)
+  // Note: buffer can be ArrayBuffer, Uint8Array, or Buffer
+  ipcMain.handle('recording:save-webcam-recording', async (_event, { buffer, filePath }: { buffer: Buffer | ArrayBuffer | Uint8Array; filePath: string }) => {
+    try {
+      // Convert to Buffer if needed (ArrayBuffer/Uint8Array from renderer)
+      let bufferData: Buffer
+      if (buffer instanceof ArrayBuffer) {
+        bufferData = Buffer.from(buffer)
+      } else if (buffer instanceof Uint8Array) {
+        bufferData = Buffer.from(buffer)
+      } else if (Buffer.isBuffer(buffer)) {
+        bufferData = buffer
+      } else {
+        throw new Error('Invalid buffer type received')
+      }
+      
+      console.log('💾 [Main Process] Saving webcam recording:', {
+        filePath,
+        bufferSize: bufferData.length,
+        fileExists: require('fs').existsSync(filePath)
+      })
+      
+      await writeFile(filePath, bufferData)
+      
+      // Verify file was created
+      const fs = require('fs')
+      const stats = fs.statSync(filePath)
+      
+      console.log('✅ [Main Process] File saved successfully:', {
+        filePath,
+        size: stats.size,
+        sizeKB: (stats.size / 1024).toFixed(2) + ' KB',
+        sizeMB: (stats.size / (1024 * 1024)).toFixed(2) + ' MB',
+        created: stats.birthtime,
+        modified: stats.mtime
+      })
+      
+      console.log('📍 Full file path:', filePath)
+      console.log('📂 File should be at:', filePath)
+      
+      return { success: true, outputPath: filePath }
+    } catch (error) {
+      console.error('❌ [Main Process] Error saving webcam recording:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to save webcam recording' 
+      }
+    }
+  })
+
 }

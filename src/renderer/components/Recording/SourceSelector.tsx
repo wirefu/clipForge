@@ -5,19 +5,26 @@ import './SourceSelector.css'
 interface SourceSelectorProps {
   onSourceSelect: (source: RecordingSource) => void
   selectedSourceId?: string
+  sources?: RecordingSource[] // Optional prop - if not provided, loads from API
 }
 
 export const SourceSelector: React.FC<SourceSelectorProps> = ({
   onSourceSelect,
-  selectedSourceId
+  selectedSourceId,
+  sources: propSources
 }) => {
-  const [sources, setSources] = useState<RecordingSource[]>([])
-  const [loading, setLoading] = useState(true)
+  const [sources, setSources] = useState<RecordingSource[]>(propSources || [])
+  const [loading, setLoading] = useState(!propSources)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadSources()
-  }, [])
+    if (propSources) {
+      setSources(propSources)
+      setLoading(false)
+    } else {
+      loadSources()
+    }
+  }, [propSources])
 
   const loadSources = async () => {
     try {
@@ -144,7 +151,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
               <h4>{source.name}</h4>
               <div className="source-type">
                 <span className={`type-badge ${source.type}`}>
-                  {source.type === 'screen' ? '🖥️ Screen' : '🪟 Window'}
+                  {source.type === 'screen' ? '🖥️ Screen' : source.type === 'window' ? '🪟 Window' : '📹 Webcam'}
                 </span>
                 {source.isAvailable && (
                   <span className="availability-badge">✓ Available</span>
