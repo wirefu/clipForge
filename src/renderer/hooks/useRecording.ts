@@ -145,7 +145,10 @@ export const useRecording = () => {
       // Generate output path
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const filename = `${settings.filename}-${timestamp}.webm`
-      const outputPath = `${settings.outputPath}/${filename}`
+      // Ensure proper path joining (handle trailing slashes)
+      const outputPath = settings.outputPath.endsWith('/') || settings.outputPath.endsWith('\\')
+        ? `${settings.outputPath}${filename}`
+        : `${settings.outputPath}/${filename}`
       
       // Store recording state
       dispatch(startRecording({ source, settings }))
@@ -157,28 +160,43 @@ export const useRecording = () => {
       const chunks: Blob[] = []
       const startTime = Date.now()
       
+      // Store stream and chunks globally for pause/resume functionality
+      ;(window as any).currentWebcamStream = stream
+      ;(window as any).currentWebcamChunks = chunks
+      
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunks.push(event.data)
         }
       }
       
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const blob = new Blob(chunks, { type: 'video/webm' })
         
         if (blob.size > 0) {
-          // Save the file
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = filename
-          a.style.display = 'none'
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
+          try {
+            // Convert blob to buffer
+            const arrayBuffer = await blob.arrayBuffer()
+            const buffer = Buffer.from(arrayBuffer)
+            
+            // Save to file system using Electron API
+            const result = await window.electronAPI.recording.saveWebcamRecording({
+              buffer,
+              filePath: outputPath
+            })
+            
+            if (result.success && result.outputPath) {
+              dispatch(setOutputPath(result.outputPath))
+            } else {
+              dispatch(setRecordingError(result.error || 'Failed to save recording'))
+            }
+          } catch (error) {
+            console.error('Error saving webcam recording:', error)
+            dispatch(setRecordingError(error instanceof Error ? error.message : 'Failed to save recording'))
+          }
         } else {
           console.error('No data recorded - blob is empty')
+          dispatch(setRecordingError('No data was recorded'))
         }
         
         // Stop all tracks
@@ -187,6 +205,8 @@ export const useRecording = () => {
         // Clear the global references
         ;(window as any).currentMediaRecorder = null
         ;(window as any).currentTimerInterval = null
+        ;(window as any).currentWebcamStream = null
+        ;(window as any).currentWebcamChunks = null
       }
       
       mediaRecorder.start(1000) // Request data every 1 second
@@ -285,14 +305,34 @@ export const useRecording = () => {
   }, [dispatch, recordingState.isRecording, recordingState.sourceType])
 
   // Pause recording
-  const handlePauseRecording = useCallback(() => {
-    dispatch(pauseRecording())
-  }, [dispatch])
+  const handlePauseRecording = useCallback(async () => {
+    if (recordingState.sourceType === 'webcam') {
+      // For webcam recording, pause MediaRecorder
+      const mediaRecorder = (window as any).currentMediaRecorder
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.pause()
+        dispatch(pauseRecording())
+      }
+    } else {
+      // For screen recording, just update state (FFmpeg pause handled differently)
+      dispatch(pauseRecording())
+    }
+  }, [dispatch, recordingState.sourceType])
 
   // Resume recording
-  const handleResumeRecording = useCallback(() => {
-    dispatch(resumeRecording())
-  }, [dispatch])
+  const handleResumeRecording = useCallback(async () => {
+    if (recordingState.sourceType === 'webcam') {
+      // For webcam recording, resume MediaRecorder
+      const mediaRecorder = (window as any).currentMediaRecorder
+      if (mediaRecorder && mediaRecorder.state === 'paused') {
+        mediaRecorder.resume()
+        dispatch(resumeRecording())
+      }
+    } else {
+      // For screen recording, just update state
+      dispatch(resumeRecording())
+    }
+  }, [dispatch, recordingState.sourceType])
 
   // Update settings
   const handleUpdateSettings = useCallback((settings: Partial<RecordingSettings>) => {

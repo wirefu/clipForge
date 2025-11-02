@@ -1,6 +1,7 @@
 import { ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { homedir } from 'os'
+import { writeFile } from 'fs/promises'
 import { recordingService } from '../services/recording.service'
 import { RecordingSettings } from '../../shared/types/recording.types'
 import { IPC_CHANNELS } from '../../shared/ipc-channels'
@@ -213,6 +214,20 @@ export function registerRecordingHandlers() {
       
     } catch (error) {
       console.error('Select output file error:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }
+    }
+  })
+
+  // Save webcam recording (save blob buffer to file)
+  ipcMain.handle('recording:save-webcam-recording', async (_, { buffer, filePath }: { buffer: Buffer; filePath: string }) => {
+    try {
+      await writeFile(filePath, buffer)
+      return { success: true, outputPath: filePath }
+    } catch (error) {
+      console.error('Error saving webcam recording:', error)
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
