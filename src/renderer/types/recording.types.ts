@@ -15,7 +15,7 @@ export interface RecordingSource {
 
 export interface RecordingSettings {
   sourceId: string
-  sourceType: 'screen' | 'window' | 'webcam'
+  sourceType: 'screen' | 'window' | 'webcam' | 'pip' // pip = picture-in-picture (screen + webcam)
   resolution: {
     width: number
     height: number
@@ -28,7 +28,10 @@ export interface RecordingSettings {
   filename: string
   format: 'mp4' | 'mov' | 'avi'
   quality: 'low' | 'medium' | 'high' | 'ultra'
-  webcamDeviceId?: string // Specific webcam device ID
+  webcamDeviceId?: string // Specific webcam device ID (for webcam or pip mode)
+  screenSourceId?: string // Screen source ID (for pip mode)
+  pipPosition?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' // PiP position
+  pipSize?: { width: number; height: number } // PiP webcam size
 }
 
 export interface RecordingState {

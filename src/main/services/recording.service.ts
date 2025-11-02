@@ -141,6 +141,16 @@ export class RecordingService {
         return { success: false, error: 'Recording already in progress' }
       }
 
+      // Validate PIP settings
+      if (settings.sourceType === 'pip') {
+        if (!settings.screenSourceId && !settings.sourceId) {
+          return { success: false, error: 'Screen source is required for PIP recording' }
+        }
+        if (!settings.webcamDeviceId) {
+          return { success: false, error: 'Webcam device is required for PIP recording' }
+        }
+      }
+
       // Generate output path
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
       const filename = `${settings.filename}-${timestamp}.${settings.format}`
@@ -148,6 +158,8 @@ export class RecordingService {
 
       // Build FFmpeg command for screen recording
       const ffmpegArgs = await this.buildFFmpegCommand(settings)
+      
+      console.log('🎬 [Recording Service] FFmpeg command:', ffmpegArgs.join(' '))
 
       // Start FFmpeg process
       this.recordingProcess = spawn('ffmpeg', ffmpegArgs, {
@@ -317,26 +329,127 @@ export class RecordingService {
   private async buildFFmpegCommand(settings: RecordingSettings): Promise<string[]> {
     const args: string[] = []
 
-
-    if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
+    if (settings.sourceType === 'pip') {
+      // PIP mode: record both screen and webcam, composite them
+      // Get device indices for webcam
+      const devices = await this.getFFmpegDevices()
+      const webcamDevices = devices.video.filter(name => 
+        name.toLowerCase().includes('facetime') || 
+        name.toLowerCase().includes('camera') ||
+        name.toLowerCase().includes('webcam')
+      )
+      
+      // Find webcam device index
+      let webcamIndex = -1
+      for (let i = 0; i < devices.video.length; i++) {
+        if (settings.webcamDeviceId) {
+          // Try to match device name to find index
+          const deviceName = devices.video[i].toLowerCase()
+          if (deviceName.includes('facetime') || deviceName.includes('camera')) {
+            webcamIndex = i
+            break
+          }
+        }
+      }
+      
+      // If no specific match, use first camera-like device
+      if (webcamIndex === -1 && webcamDevices.length > 0) {
+        const firstWebcamName = webcamDevices[0].toLowerCase()
+        webcamIndex = devices.video.findIndex(name => 
+          name.toLowerCase().includes(firstWebcamName.split(' ')[0])
+        )
+      }
+      
+      // Default to index 0 if still not found (FaceTime camera is usually index 0)
+      if (webcamIndex === -1) {
+        webcamIndex = 0
+      }
+      
+      console.log('📺📹 [Recording Service] Building PIP command:', {
+        screenInput: '1:0', // Display 1, Audio 0
+        webcamIndex: webcamIndex,
+        webcamDevices: devices.video,
+        selectedWebcamDeviceId: settings.webcamDeviceId
+      })
+      
+      // Build complex filter for PIP overlay
+      // Screen is input 0, webcam is input 1
+      const pipSize = settings.pipSize || { width: 320, height: 240 }
+      const mainWidth = settings.resolution.width
+      const mainHeight = settings.resolution.height
+      
+      // Calculate position based on pipPosition
+      let xPos = 0
+      let yPos = 0
+      const padding = 20
+      
+      switch (settings.pipPosition) {
+        case 'top-left':
+          xPos = padding
+          yPos = padding
+          break
+        case 'top-right':
+          xPos = mainWidth - pipSize.width - padding
+          yPos = padding
+          break
+        case 'bottom-left':
+          xPos = padding
+          yPos = mainHeight - pipSize.height - padding
+          break
+        case 'bottom-right':
+        default:
+          xPos = mainWidth - pipSize.width - padding
+          yPos = mainHeight - pipSize.height - padding
+          break
+      }
+      
+      // FFmpeg command with two inputs and overlay filter
+      // Input 0: Screen (avfoundation display 1, audio 0)
+      // Input 1: Webcam (avfoundation video device index, no audio)
+      args.push(
+        '-f', 'avfoundation',
+        '-framerate', settings.framerate.toString(),
+        '-video_size', `${mainWidth}x${mainHeight}`,
+        '-i', '1:0', // Screen input: display 1, audio input 0
+        '-f', 'avfoundation',
+        '-framerate', settings.framerate.toString(),
+        '-video_size', `${pipSize.width}x${pipSize.height}`,
+        '-i', `${webcamIndex}:none`, // Webcam input: video device index, no audio
+        '-filter_complex', `[0:v][1:v]overlay=${xPos}:${yPos}[v]`, // Overlay webcam on screen
+        '-map', '[v]', // Map the overlaid video
+        '-r', settings.framerate.toString(),
+        '-b:v', `${settings.bitrate}k`,
+        '-pix_fmt', 'yuv420p'
+      )
+      
+      if (settings.audioEnabled) {
+        args.push('-map', '0:a', '-b:a', '128k') // Map audio from screen input
+      } else {
+        args.push('-an')
+      }
+      
+      args.push('-f', settings.format)
+      args.push(this.outputPath!)
+    } else if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
+      // Standard screen recording
       args.push('-f', 'avfoundation')
       args.push('-i', '1:0')
+      
+      args.push(
+        '-r', settings.framerate.toString(),
+        '-b:v', `${settings.bitrate}k`,
+        '-pix_fmt', 'yuv420p'
+      )
+
+      if (settings.audioEnabled) {
+        args.push('-b:a', '128k')
+      } else {
+        args.push('-an')
+      }
+
+      args.push('-f', settings.format)
+      args.push(this.outputPath!)
     }
-
-    args.push(
-      '-r', settings.framerate.toString(),
-      '-b:v', `${settings.bitrate}k`,
-      '-pix_fmt', 'yuv420p'
-    )
-
-    if (settings.audioEnabled) {
-      args.push('-b:a', '128k')
-    } else {
-      args.push('-an')
-    }
-
-    args.push('-f', settings.format)
-    args.push(this.outputPath!)
 
     return args
   }

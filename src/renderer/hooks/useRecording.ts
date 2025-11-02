@@ -118,13 +118,16 @@ export const useRecording = () => {
     try {
       const screenSources = await window.electronAPI.recording.getScreenSources()
       // Merge with existing webcam sources instead of replacing all sources
-      const webcamSources = recordingState.sources.filter(s => s.type === 'webcam')
+      // Use selector to get current sources without dependency
+      const currentState = recordingState
+      const webcamSources = currentState.sources.filter(s => s.type === 'webcam')
       dispatch(setSources([...screenSources, ...webcamSources]))
     } catch (error) {
       console.error('Error loading screen sources:', error)
       dispatch(setRecordingError('Failed to load screen sources'))
     }
-  }, [dispatch, recordingState.sources])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]) // Remove recordingState.sources from deps to prevent infinite loop
 
   // Load webcam devices
   const loadWebcamDevices = useCallback(async () => {
@@ -161,7 +164,9 @@ export const useRecording = () => {
       console.log('📹 Webcam sources:', webcamSources.map(s => ({ id: s.id, name: s.name })))
 
       // Merge with existing screen sources instead of replacing
-      const screenSources = recordingState.sources.filter(s => s.type !== 'webcam')
+      // Use current state without dependency
+      const currentState = recordingState
+      const screenSources = currentState.sources.filter(s => s.type !== 'webcam')
       dispatch(setSources([...screenSources, ...webcamSources]))
       
       console.log(`✅ Total sources after merge: ${screenSources.length} screen + ${webcamSources.length} webcam = ${screenSources.length + webcamSources.length}`)
@@ -169,7 +174,8 @@ export const useRecording = () => {
       console.error('❌ Error loading webcam devices:', error)
       // Don't show error to user - webcam might just not be available
     }
-  }, [dispatch, recordingState.sources])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]) // Remove recordingState.sources from deps to prevent infinite loop
 
   // Handle webcam recording with MediaRecorder
   const handleWebcamRecording = useCallback(async (settings: RecordingSettings) => {
@@ -717,8 +723,9 @@ export const useRecording = () => {
         comparison: `"${settings.sourceType}" === "webcam" => ${settings.sourceType === 'webcam'}`
       })
       
-      // STRICT check: Only screen/window should use FFmpeg path
+      // Handle different recording types
       if (settings.sourceType === 'webcam') {
+        // Webcam recording using MediaRecorder in renderer
         console.log('📹 ✅ WEBCAM recording path selected - using MediaRecorder')
         console.log('📹 Settings:', JSON.stringify(settings, null, 2))
         try {
@@ -728,6 +735,33 @@ export const useRecording = () => {
         } catch (error) {
           console.error('❌ Webcam recording failed:', error)
           throw error // Re-throw to show error to user
+        }
+      } else if (settings.sourceType === 'pip') {
+        // Picture-in-picture recording using FFmpeg in main process
+        console.log('📺📹 PIP recording path selected - using FFmpeg with dual inputs')
+        console.log('📺📹 Settings:', JSON.stringify(settings, null, 2))
+        
+        const result = await window.electronAPI.recording.startRecording(settings)
+        
+        if (result.success) {
+          // For PIP, create a composite source
+          const screenSource = recordingState.sources.find(s => s.id === settings.screenSourceId || s.id === settings.sourceId)
+          const webcamSource = recordingState.sources.find(s => s.deviceId === settings.webcamDeviceId)
+          
+          if (screenSource) {
+            // Create a composite source representation for PIP
+            const pipSource: RecordingSource = {
+              id: `pip-${screenSource.id}-${webcamSource?.id || 'webcam'}`,
+              name: `PIP: ${screenSource.name} + ${webcamSource?.name || 'Webcam'}`,
+              type: 'screen', // Use screen type for display
+              isAvailable: true
+            }
+            dispatch(startRecording({ source: pipSource, settings }))
+          } else {
+            dispatch(setRecordingError('Selected screen source not found'))
+          }
+        } else {
+          dispatch(setRecordingError(result.error || 'Failed to start PIP recording'))
         }
       } else if (settings.sourceType === 'screen' || settings.sourceType === 'window') {
         // Screen/window recording using FFmpeg in main process
@@ -747,7 +781,7 @@ export const useRecording = () => {
       } else {
         // Unknown source type
         console.error('❌ Unknown source type:', settings.sourceType)
-        throw new Error(`Invalid source type: ${settings.sourceType}. Expected 'webcam', 'screen', or 'window'.`)
+        throw new Error(`Invalid source type: ${settings.sourceType}. Expected 'webcam', 'screen', 'window', or 'pip'.`)
       }
     } catch (error) {
       console.error('❌ Error starting recording:', error)

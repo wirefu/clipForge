@@ -23,7 +23,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     error,
     sources,
     selectedSourceId,
-    settings,
     startRecording,
     stopRecording,
     pauseRecording,
@@ -34,37 +33,58 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
 
 
   const [selectedSource, setSelectedSourceState] = useState<RecordingSource | null>(null)
-  const [recordingType, setRecordingType] = useState<'screen' | 'webcam'>('screen')
+  const [selectedScreenSource, setSelectedScreenSource] = useState<RecordingSource | null>(null) // For PIP mode
+  const [selectedWebcamSource, setSelectedWebcamSource] = useState<RecordingSource | null>(null) // For PIP mode
+  const [recordingType, setRecordingType] = useState<'screen' | 'webcam' | 'pip'>('screen')
   const [recordingSettings, setRecordingSettings] = useState<Partial<RecordingSettings>>({
     resolution: { width: 1280, height: 720 },
     framerate: 30,
     bitrate: 5000,
     audioEnabled: true,
-    quality: 'medium'
+    quality: 'medium',
+    pipPosition: 'bottom-right',
+    pipSize: { width: 320, height: 240 } // Default PiP size
   })
   const [outputPath, setOutputPath] = useState<string>('')
 
   useEffect(() => {
     if (isOpen) {
       setSelectedSourceState(null)
+      setSelectedScreenSource(null)
+      setSelectedWebcamSource(null)
       setRecordingType('screen')
       setRecordingSettings({
         resolution: { width: 1280, height: 720 },
         framerate: 30,
         bitrate: 5000,
         audioEnabled: true,
-        quality: 'medium'
+        quality: 'medium',
+        pipPosition: 'bottom-right',
+        pipSize: { width: 320, height: 240 }
       })
       setOutputPath('')
+      
+      // Refresh sources when modal opens to ensure screen sources are loaded
+      // Use the refreshSources function directly to avoid dependency issues
+      setTimeout(() => {
+        recordingHook.refreshSources()
+      }, 0)
     }
-  }, [isOpen])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]) // Remove recordingHook from deps to prevent infinite loop
 
   // Filter sources by recording type
   const availableSources = sources.filter(source => 
     recordingType === 'screen' 
       ? (source.type === 'screen' || source.type === 'window')
-      : source.type === 'webcam'
+      : recordingType === 'webcam'
+      ? source.type === 'webcam'
+      : true // PIP mode shows all sources (handled separately)
   )
+  
+  // Separate sources for PIP mode
+  const screenSources = sources.filter(s => s.type === 'screen' || s.type === 'window')
+  const webcamSources = sources.filter(s => s.type === 'webcam')
 
   const handleSourceSelect = (source: RecordingSource) => {
     setSelectedSourceState(source)
@@ -72,9 +92,17 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
   }
 
   const handleStartRecording = async () => {
-    if (!selectedSourceId) {
-      alert(`Please select a ${recordingType} source first`)
-      return
+    // Validation based on recording type
+    if (recordingType === 'pip') {
+      if (!selectedScreenSource || !selectedWebcamSource) {
+        alert('Please select both a screen source and webcam device for picture-in-picture recording')
+        return
+      }
+    } else {
+      if (!selectedSourceId) {
+        alert(`Please select a ${recordingType} source first`)
+        return
+      }
     }
 
     try {
@@ -89,33 +117,69 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         setOutputPath(dir)
       }
 
-      const selectedSource = availableSources.find(source => source.id === selectedSourceId)
+      let fullSettings: RecordingSettings
 
-      if (!selectedSource) {
-        alert('Selected source not found. Please refresh and try again.')
-        return
+      if (recordingType === 'pip') {
+        // PIP mode: need both screen and webcam
+        if (!selectedScreenSource || !selectedWebcamSource) {
+          alert('Please select both screen and webcam sources for picture-in-picture')
+          return
+        }
+        
+        fullSettings = {
+          sourceId: selectedScreenSource.id, // Primary source (screen)
+          sourceType: 'pip',
+          screenSourceId: selectedScreenSource.id,
+          webcamDeviceId: selectedWebcamSource.deviceId,
+          resolution: recordingSettings.resolution!,
+          framerate: recordingSettings.framerate!,
+          bitrate: recordingSettings.bitrate!,
+          audioEnabled: recordingSettings.audioEnabled!,
+          outputPath: finalOutputPath,
+          filename: `recording_${new Date().toISOString().replace(/[:.]/g, '-')}`,
+          format: 'mp4',
+          quality: recordingSettings.quality!,
+          pipPosition: recordingSettings.pipPosition || 'bottom-right',
+          pipSize: recordingSettings.pipSize || { width: 320, height: 240 }
+        }
+      } else {
+        // Single source mode (screen or webcam)
+        const foundSource = availableSources.find(source => source.id === selectedSourceId) || selectedSource
+        if (!foundSource) {
+          alert('Selected source not found. Please refresh and try again.')
+          return
+        }
+
+        fullSettings = {
+          sourceId: foundSource.id,
+          sourceType: recordingType as 'screen' | 'window' | 'webcam',
+          resolution: recordingSettings.resolution!,
+          framerate: recordingSettings.framerate!,
+          bitrate: recordingSettings.bitrate!,
+          audioEnabled: recordingSettings.audioEnabled!,
+          outputPath: finalOutputPath,
+          filename: `recording_${new Date().toISOString().replace(/[:.]/g, '-')}`,
+          format: recordingType === 'webcam' ? 'mp4' : 'mp4', // Webcam saves as webm but we'll convert
+          quality: recordingSettings.quality!,
+          webcamDeviceId: recordingType === 'webcam' ? foundSource.deviceId : undefined
+        }
       }
 
-      const fullSettings: RecordingSettings = {
-        sourceId: selectedSourceId,
-        sourceType: recordingType as 'screen' | 'window' | 'webcam',
-        resolution: recordingSettings.resolution!,
-        framerate: recordingSettings.framerate!,
-        bitrate: recordingSettings.bitrate!,
-        audioEnabled: recordingSettings.audioEnabled!,
-        outputPath: finalOutputPath,
-        filename: `recording_${new Date().toISOString().replace(/[:.]/g, '-')}`,
-        format: recordingType === 'webcam' ? 'mp4' : 'mp4', // Webcam saves as webm but we'll convert
-        quality: recordingSettings.quality!,
-        webcamDeviceId: recordingType === 'webcam' ? selectedSource.deviceId : undefined
-      }
-
+      const sourceName = recordingType === 'pip' 
+        ? `${selectedScreenSource?.name || 'Unknown'} + ${selectedWebcamSource?.name || 'Unknown'}`
+        : (recordingType === 'webcam' 
+          ? (availableSources.find(s => s.id === selectedSourceId)?.name || 'Unknown')
+          : (selectedSource?.name || availableSources.find(s => s.id === selectedSourceId)?.name || 'Unknown'))
+      
       console.log('📝 RecordingModal: Starting recording with settings:', {
         sourceType: fullSettings.sourceType,
         recordingType: recordingType,
         sourceId: fullSettings.sourceId,
         webcamDeviceId: fullSettings.webcamDeviceId,
-        sourceName: selectedSource.name
+        screenSourceId: fullSettings.screenSourceId,
+        sourceName: sourceName,
+        pipPosition: fullSettings.pipPosition,
+        pipSize: fullSettings.pipSize
       })
 
       await startRecording(fullSettings)
@@ -166,7 +230,11 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     <div className="recording-modal-overlay">
       <div className="recording-modal">
         <div className="recording-modal-header">
-          <h2>{recordingType === 'webcam' ? 'Webcam Recording' : 'Screen Recording'}</h2>
+          <h2>
+            {recordingType === 'webcam' ? 'Webcam Recording' : 
+             recordingType === 'pip' ? 'Picture-in-Picture Recording' : 
+             'Screen Recording'}
+          </h2>
           <button className="close-btn" onClick={onClose}>
             ✕
           </button>
@@ -194,41 +262,124 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                     onClick={() => {
                       setRecordingType('webcam')
                       setSelectedSourceState(null)
+                      setSelectedScreenSource(null)
+                      setSelectedWebcamSource(null)
                       setSelectedSource('')
                     }}
                   >
                     📹 Webcam
                   </button>
+                  <button
+                    className={`type-btn ${recordingType === 'pip' ? 'active' : ''}`}
+                    onClick={() => {
+                      setRecordingType('pip')
+                      setSelectedSourceState(null)
+                      setSelectedSource('')
+                    }}
+                  >
+                    📺📹 Picture-in-Picture
+                  </button>
                 </div>
               </div>
 
               {/* Source Selection */}
-              <div className="recording-section">
-                <h3>{recordingType === 'screen' ? 'Screen Source' : 'Webcam Device'}</h3>
-                {recordingType === 'webcam' && (
-                  <div style={{ marginBottom: '16px' }}>
-                    <WebcamPreview
-                      deviceId={selectedSourceId || undefined}
-                      isActive={!!selectedSourceId && !isRecording}
-                      width={640}
-                      height={360}
+              {recordingType === 'pip' ? (
+                <>
+                  {/* PIP Mode: Show both screen and webcam selectors */}
+                  <div className="recording-section">
+                    <h3>Screen Source (Main Video)</h3>
+                    <SourceSelector
+                      onSourceSelect={(source) => {
+                        setSelectedScreenSource(source)
+                        setSelectedSource(source.id)
+                      }}
+                      selectedSourceId={selectedScreenSource?.id}
+                      sources={screenSources}
                     />
                   </div>
-                )}
-                {recordingType === 'webcam' && availableSources.length === 0 && (
-                  <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
-                    <p>No webcam devices found.</p>
-                    <p style={{ fontSize: '12px', marginTop: '8px' }}>
-                      Make sure your camera is connected and check browser permissions.
-                    </p>
+                  <div className="recording-section">
+                    <h3>Webcam Device (Picture-in-Picture)</h3>
+                    {selectedWebcamSource && (
+                      <div style={{ marginBottom: '16px' }}>
+                        <WebcamPreview
+                          deviceId={selectedWebcamSource.deviceId}
+                          isActive={!!selectedWebcamSource && !isRecording}
+                          width={320}
+                          height={240}
+                        />
+                      </div>
+                    )}
+                    {webcamSources.length === 0 && (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                        <p>No webcam devices found.</p>
+                        <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                          Make sure your camera is connected and check browser permissions.
+                        </p>
+                      </div>
+                    )}
+                    <SourceSelector
+                      onSourceSelect={(source) => {
+                        setSelectedWebcamSource(source)
+                      }}
+                      selectedSourceId={selectedWebcamSource?.id}
+                      sources={webcamSources}
+                    />
+                    {/* PiP Position and Size Settings */}
+                    <div style={{ marginTop: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+                        PiP Position:
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const).map((pos) => (
+                          <button
+                            key={pos}
+                            className={`pip-position-btn ${recordingSettings.pipPosition === pos ? 'active' : ''}`}
+                            onClick={() => setRecordingSettings({ ...recordingSettings, pipPosition: pos })}
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '12px',
+                              border: '1px solid #444',
+                              borderRadius: '4px',
+                              background: recordingSettings.pipPosition === pos ? '#00d4ff' : '#2a2a2a',
+                              color: recordingSettings.pipPosition === pos ? '#000' : '#fff',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {pos.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                )}
-                <SourceSelector
-                  onSourceSelect={handleSourceSelect}
-                  selectedSourceId={selectedSourceId}
-                  sources={availableSources}
-                />
-              </div>
+                </>
+              ) : (
+                <div className="recording-section">
+                  <h3>{recordingType === 'screen' ? 'Screen Source' : 'Webcam Device'}</h3>
+                  {recordingType === 'webcam' && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <WebcamPreview
+                        deviceId={selectedSourceId || undefined}
+                        isActive={!!selectedSourceId && !isRecording}
+                        width={640}
+                        height={360}
+                      />
+                    </div>
+                  )}
+                  {recordingType === 'webcam' && availableSources.length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
+                      <p>No webcam devices found.</p>
+                      <p style={{ fontSize: '12px', marginTop: '8px' }}>
+                        Make sure your camera is connected and check browser permissions.
+                      </p>
+                    </div>
+                  )}
+                  <SourceSelector
+                    onSourceSelect={handleSourceSelect}
+                    selectedSourceId={selectedSourceId || undefined}
+                    sources={availableSources}
+                  />
+                </div>
+              )}
 
               {/* Recording Settings */}
               <div className="recording-section">
@@ -330,13 +481,13 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                 <button
                   className="btn btn-primary start-btn"
                   onClick={handleStartRecording}
-                  disabled={!selectedSourceId}
+                  disabled={recordingType === 'pip' ? (!selectedScreenSource || !selectedWebcamSource) : !selectedSourceId}
                   style={{ 
-                    backgroundColor: selectedSourceId ? '#007acc' : '#555',
-                    opacity: selectedSourceId ? 1 : 0.6 
+                    backgroundColor: (recordingType === 'pip' ? (selectedScreenSource && selectedWebcamSource) : selectedSourceId) ? '#007acc' : '#555',
+                    opacity: (recordingType === 'pip' ? (selectedScreenSource && selectedWebcamSource) : selectedSourceId) ? 1 : 0.6 
                   }}
                 >
-                  🎬 Start Recording {selectedSourceId ? '✓' : '✗'}
+                  🎬 Start Recording {(recordingType === 'pip' ? (selectedScreenSource && selectedWebcamSource) : selectedSourceId) ? '✓' : '✗'}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -351,8 +502,19 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
             <div className="recording-in-progress">
               <div className="recording-status">
                 <h3>🎬 Recording in Progress</h3>
-                <p>Recording: {recordingType === 'webcam' ? 'Webcam' : (sources.find(s => s.id === selectedSourceId)?.name || 'Unknown')}</p>
-                <p>Source: {sources.find(s => s.id === selectedSourceId)?.name || availableSources.find(s => s.id === selectedSourceId)?.name || 'Unknown'}</p>
+                {recordingType === 'pip' ? (
+                  <>
+                    <p>Recording: Picture-in-Picture</p>
+                    <p>Screen: {selectedScreenSource?.name || 'Unknown'}</p>
+                    <p>Webcam: {selectedWebcamSource?.name || 'Unknown'}</p>
+                    <p>Position: {recordingSettings.pipPosition || 'bottom-right'}</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Recording: {recordingType === 'webcam' ? 'Webcam' : (sources.find(s => s.id === selectedSourceId)?.name || 'Unknown')}</p>
+                    <p>Source: {sources.find(s => s.id === selectedSourceId)?.name || availableSources.find(s => s.id === selectedSourceId)?.name || 'Unknown'}</p>
+                  </>
+                )}
                 <p>Resolution: {recordingSettings.resolution?.width}x{recordingSettings.resolution?.height}</p>
                 <p>Frame Rate: {recordingSettings.framerate} fps</p>
                 {recordingSettings.audioEnabled && <p>Audio: Enabled</p>}

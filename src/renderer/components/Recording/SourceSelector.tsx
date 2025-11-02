@@ -18,13 +18,21 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (propSources) {
-      setSources(propSources)
+    if (propSources && propSources.length > 0) {
+      // Only update if propSources actually changed (by comparing length and first item)
+      setSources(prevSources => {
+        if (prevSources.length !== propSources.length || 
+            (prevSources.length > 0 && prevSources[0]?.id !== propSources[0]?.id)) {
+          return propSources
+        }
+        return prevSources
+      })
       setLoading(false)
-    } else {
+    } else if (!propSources) {
       loadSources()
     }
-  }, [propSources])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propSources?.length, propSources?.[0]?.id]) // Only depend on length and first ID to prevent infinite loop
 
   const loadSources = async () => {
     try {
