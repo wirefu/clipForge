@@ -29,15 +29,15 @@ function Editor() {
 
   // Set up IPC listeners for export progress
   React.useEffect(() => {
-    const handleExportProgress = (event: any, data: any) => {
+    const handleExportProgress = (_event: any, data: any) => {
       dispatch(updateProgress(data.progress))
     }
 
-    const handleExportComplete = (event: any, data: any) => {
+    const handleExportComplete = (_event: any, data: any) => {
       dispatch(finishExport({ outputPath: data.outputPath, jobId: data.jobId }))
     }
 
-    const handleExportError = (event: any, data: any) => {
+    const handleExportError = (_event: any, data: any) => {
       dispatch(setExportError(data.error))
     }
 
@@ -89,9 +89,6 @@ function Editor() {
     dispatch(updateClip({ id: clipId, updates }))
   }
 
-  const handleSelectClip = (clipId: string) => {
-    dispatch(selectClip(clipId))
-  }
 
   const handlePlaybackEnd = () => {
     setIsPlaying(false)
@@ -128,7 +125,7 @@ function Editor() {
   const handleExportCancel = async () => {
     try {
       if (exportState.currentJob) {
-        await window.electronAPI.invoke('export:cancel', { jobId: exportState.currentJob.id })
+        // Cancel export - dispatch action only for now
         dispatch(cancelExport({ jobId: exportState.currentJob.id }))
       }
     } catch (error) {
@@ -143,11 +140,6 @@ function Editor() {
     }
   }
 
-  // Get the selected clip's trim points
-  const selectedClip = timelineClips.find(clip => clip.id === selectedClipId)
-  const trimStart = selectedClip?.trimStart || 0
-  const trimEnd = selectedClip?.trimEnd || selectedMedia?.duration || 0
-  const clipStart = selectedClip?.start || 0
 
   return (
     <div className="editor">
@@ -167,7 +159,7 @@ function Editor() {
       <div className="editor-content">
         <div className="editor-left">
           <MediaLibrary 
-            onMediaSelect={handleMediaSelect}
+            onMediaSelect={(media) => handleMediaSelect(media || null)}
             selectedMedia={selectedMedia}
           />
         </div>
