@@ -170,13 +170,30 @@ export const useRecording = () => {
   // IMPORTANT: For webcam, use standard navigator.mediaDevices.getUserMedia()
   // Do NOT use desktopCapturer - that's only for screen/window capture
   const handleWebcamRecording = useCallback(async (settings: RecordingSettings) => {
+    console.log('📹 handleWebcamRecording called with settings:', {
+      sourceId: settings.sourceId,
+      sourceType: settings.sourceType,
+      resolution: settings.resolution,
+      framerate: settings.framerate
+    })
+    
     try {
       // Find the webcam source
       const source = recordingState.webcamDevices.find(s => s.id === settings.sourceId)
+      console.log('Looking for webcam source with id:', settings.sourceId)
+      console.log('Available webcam devices:', recordingState.webcamDevices.map(d => ({ id: d.id, name: d.name, deviceId: d.deviceId })))
+      
       if (!source) {
+        console.error('❌ Selected webcam not found!')
         dispatch(setRecordingError('Selected webcam not found'))
         return
       }
+      
+      console.log('✅ Found webcam source:', {
+        id: source.id,
+        name: source.name,
+        deviceId: source.deviceId
+      })
       
       // For webcam: Use standard getUserMedia() with video constraints
       // Do NOT use desktopCapturer - that's only for screen capture
@@ -432,9 +449,18 @@ export const useRecording = () => {
     try {
       dispatch(clearRecordingError())
       
+      console.log('🎬 Starting recording with settings:', {
+        sourceType: settings.sourceType,
+        sourceId: settings.sourceId,
+        resolution: settings.resolution,
+        framerate: settings.framerate
+      })
+      
       if (settings.sourceType === 'webcam') {
+        console.log('✅ Using WEBCAM recording path - will call handleWebcamRecording')
         await handleWebcamRecording(settings)
       } else {
+        console.log('📺 Using SCREEN recording path - will call main process FFmpeg')
         const result = await window.electronAPI.recording.startRecording(settings)
         
         if (result.success) {
