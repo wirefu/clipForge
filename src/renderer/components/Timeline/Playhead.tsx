@@ -46,18 +46,16 @@ function Playhead({
     let newTime = pixelsToTime(clampedX, zoomLevel)
     newTime = Math.max(0, Math.min(newTime, totalDuration))
     
-    // Apply snapping
+    // Apply snapping (grid takes priority over clip edges)
     if (snapToGridEnabled) {
       const snapResult = snapToGrid(newTime, gridSize)
-      if (snapResult.wasSnapped) {
-        newTime = snapResult.snappedValue
+      newTime = snapResult.snappedValue
+    } else {
+      // Only snap to clip edges if grid snapping is disabled
+      const snapToEdge = snapToClipEdge(newTime, clipEdges, 0.1)
+      if (snapToEdge.wasSnapped) {
+        newTime = snapToEdge.snappedValue
       }
-    }
-    
-    // Snap to clip edges if close enough
-    const snapToEdge = snapToClipEdge(newTime, clipEdges, 0.1)
-    if (snapToEdge.wasSnapped) {
-      newTime = snapToEdge.snappedValue
     }
     
     onTimeUpdate(newTime)

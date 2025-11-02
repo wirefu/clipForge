@@ -68,9 +68,7 @@ function TimelineClip({
       // Apply snapping
       if (snapToGridEnabled) {
         const snapResult = snapToGrid(newTrimStart, gridSize)
-        if (snapResult.wasSnapped) {
-          newTrimStart = snapResult.snappedValue
-        }
+        newTrimStart = snapResult.snappedValue
       }
       
       onUpdateClip(clip.id, { trimStart: newTrimStart })
@@ -82,9 +80,7 @@ function TimelineClip({
       // Apply snapping
       if (snapToGridEnabled) {
         const snapResult = snapToGrid(newTrimEnd, gridSize)
-        if (snapResult.wasSnapped) {
-          newTrimEnd = snapResult.snappedValue
-        }
+        newTrimEnd = snapResult.snappedValue
       }
       
       onUpdateClip(clip.id, { trimEnd: newTrimEnd })
@@ -93,18 +89,16 @@ function TimelineClip({
       let newStart = dragStart.time + deltaTime
       newStart = Math.max(0, newStart)
       
-      // Apply snapping
+      // Apply snapping (grid takes priority over clip edges)
       if (snapToGridEnabled) {
         const snapResult = snapToGrid(newStart, gridSize)
-        if (snapResult.wasSnapped) {
-          newStart = snapResult.snappedValue
+        newStart = snapResult.snappedValue
+      } else {
+        // Only snap to clip edges if grid snapping is disabled
+        const snapToEdge = snapToClipEdge(newStart, otherClipEdges, 0.1)
+        if (snapToEdge.wasSnapped) {
+          newStart = snapToEdge.snappedValue
         }
-      }
-      
-      // Snap to other clip edges
-      const snapToEdge = snapToClipEdge(newStart, otherClipEdges, 0.1)
-      if (snapToEdge.wasSnapped) {
-        newStart = snapToEdge.snappedValue
       }
       
       onUpdateClip(clip.id, { start: newStart })

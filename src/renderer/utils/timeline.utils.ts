@@ -64,9 +64,10 @@ export function formatTimePrecise(time: number): string {
  */
 export function snapToGrid(time: number, gridSize: number): SnapResult {
   const snapped = Math.round(time / gridSize) * gridSize
+  // Always snap to grid (no threshold check - if snap is enabled, always snap)
   return {
     snappedValue: snapped,
-    wasSnapped: Math.abs(time - snapped) < 0.01 // Consider snapped if within 0.01s
+    wasSnapped: true
   }
 }
 
