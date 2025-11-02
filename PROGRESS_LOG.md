@@ -20,17 +20,16 @@
 - **Testing**: Full end-to-end testing completed
 - **Issues Fixed**: 5 bugs resolved including timer updates and Redux warnings
 
-## Phase 2: Webcam Recording Implementation (PR-14) 🔄 IN PROGRESS
-- **Status**: Implementation complete, ready for testing
-- **Features Implemented**:
-  - ✅ Webcam device enumeration using navigator.mediaDevices.enumerateDevices()
-  - ✅ WebcamPreview component with live feed display
-  - ✅ Webcam selection in RecordingModal with device dropdown
-  - ✅ Recording type selector (Screen/Webcam/Screen+Webcam)
-  - ✅ Dynamic webcam device detection for FFmpeg
-  - ✅ Frontend and backend resolution compatibility (1280x720)
-- **Current Issue**: FFmpeg device detection needs final testing
-- **Next Steps**: Test webcam recording functionality and resolve any remaining issues
+## Phase 2: Webcam Recording Implementation (PR-14) ❌ REMOVED
+- **Status**: All webcam functionality removed, starting fresh
+- **Reason**: Persistent issues with webcam recording capturing screen instead of camera
+- **Removed Components**:
+  - WebcamPreview component and CSS
+  - Webcam IPC handlers
+  - Webcam device enumeration
+  - Recording type selector (now only screen recording)
+  - Webcam-related Redux state
+- **Next Steps**: Re-implement webcam recording from scratch when ready
 
 ## Technical Achievements
 - **IPC Communication**: Robust Electron IPC setup for recording operations
@@ -44,11 +43,28 @@
 - **Critical Fixes**: Timer updates, Redux warnings, FFmpeg compatibility, device detection
 - **Testing Coverage**: Step-by-step manual testing for all major features
 
+## Recent Fixes (2025-01-31)
+
+### Video Preview from Media Library ✅ FIXED
+- **Issue**: Video preview not loading when clicking media files in library
+- **Root Cause**: Type conflicts and video element not reloading source on media change
+- **Fixes Applied**:
+  - Resolved type conflicts between `src/shared/types.ts` and `src/renderer/types/recording.types.ts`
+  - Added `key={media.id}` prop to video/audio elements to force remount on source change
+  - Added explicit `useEffect` to update video `src` and call `load()` when media changes
+  - Updated `Editor.tsx` to conditionally render `VideoPreview` for library selection vs `TimelinePreview` for timeline
+  - Fixed `VideoPreview` time handling for library preview mode (clipStart=0, trimStart=0)
+
+### Type System Cleanup ✅ COMPLETED
+- Removed duplicate type definitions from `src/shared/types.ts`
+- Centralized shared types in renderer types with proper re-exports
+
 ## Current Status
 - **Main Branch**: Contains working screen recording (PR-13)
-- **Active Branch**: feature/PR-14-webcam-recording (ready for testing)
-- **Next Phase**: Complete webcam recording testing and merge to main
+- **Active Branch**: feature/PR-14-webcam-recording (webcam removed, video preview fixed)
+- **Recent Commit**: `2d3d0f5` - "Remove all webcam recording functionality and fix video preview"
+- **Next Phase**: Screen recording fully functional, video preview working, ready for next feature
 
 ---
-*Last Updated: 2025-01-30*
+*Last Updated: 2025-01-31*
 *Branch: feature/PR-14-webcam-recording*

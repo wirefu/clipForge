@@ -1,10 +1,10 @@
 # Progress: ClipForge Development Status
 
 ## Overall Progress
-**Status**: Core features implemented, EPIPE error during refresh persists  
+**Status**: Core features implemented, video preview fixed, webcam removed  
 **Phase**: Phase 2 - Full Submission Features  
 **Timeline**: Advanced development phase  
-**Completion**: ~75% (Core MVP + Advanced Timeline + Recording + Preview + Export)
+**Completion**: ~75% (Core MVP + Advanced Timeline + Screen Recording + Preview + Export)
 
 ## Current Known Issues
 
@@ -41,20 +41,19 @@
 - **Linting**: ESLint and Prettier configured
 - **Git**: Repository with proper branching and commits
 
-### ✅ Recording Features (Fully Implemented)
-- **Screen Recording**: FFmpeg-based screen recording via avfoundation
-- **Webcam Recording**: MediaRecorder API in renderer process (architectural fix for resource contention)
+### ✅ Recording Features (Screen Recording Only)
+- **Screen Recording**: FFmpeg-based screen recording via avfoundation ✅
+- **Webcam Recording**: ❌ REMOVED - All webcam functionality removed due to persistent issues
 - **Recording Controls**: Start/stop, pause/resume, duration timer, quality settings
-- **Device Management**: Camera and microphone device selection
+- **Device Management**: Screen and window source selection
 - **Recording Status**: Synchronized between main and renderer processes
 - **File Output**: Recordings saved via Electron file system API
 
 **Key Implementation Notes**:
-- Webcam recording uses pure browser approach (MediaRecorder) to avoid FFmpeg resource contention
 - Screen recording uses FFmpeg with proper parameter handling
 - IPC handlers prevent duplicate registration during hot reloads
 - Timer cleanup prevents memory leaks
-- **Recent Fixes**: File saving uses Electron API, pause/resume implemented, stop handler waits for save completion
+- **Webcam Removal**: All webcam code removed (WebcamPreview, IPC handlers, Redux state, device enumeration) - will re-implement from scratch when ready
 
 ### ✅ Import & Media Management (Fully Implemented)
 - **Drag & Drop**: Video/audio/image file import with visual feedback
@@ -96,11 +95,15 @@
 - **Scrubbing**: Dragging playhead seeks video to correct position
 - **Audio Synchronization**: Audio and video synchronized during playback
 - **Frame-accurate Preview**: Shows current frame at playhead position when paused
+- **Library Preview**: Click media files in library to preview before adding to timeline ✅
 
 **Key Implementation Notes**:
 - TimelinePreview component handles multi-clip composition
+- VideoPreview component handles individual media preview from library
 - Automatic clip transitions during playback
 - Proper seeking and time synchronization
+- **Recent Fix**: Video element uses `key` prop and explicit `src` updates to reload on media change
+- **Recent Fix**: Conditional rendering - TimelinePreview for timeline clips, VideoPreview for library selection
 
 ### ⚠️ Export Features (Partially Implemented)
 - **Export to MP4**: FFmpeg-based export functionality ✅
@@ -128,11 +131,12 @@
 - No "source resolution" option available
 - Need to add button/option that uses source video's resolution from metadata
 
-### ❌ Simultaneous Screen + Webcam (PiP) Not Implemented
-- UI has "both" recording type option
-- No actual picture-in-picture compositing implemented
-- When "both" is selected, it only records screen, not composite
-- Need canvas compositing logic for PiP
+### ❌ Webcam Recording Removed
+- All webcam recording functionality removed
+- WebcamPreview component deleted
+- Webcam IPC handlers removed
+- Recording type selector now only supports screen recording
+- Will re-implement from scratch when ready
 
 ### ❌ Auto-add Recordings to Timeline
 - Recordings save to file system ✅
@@ -160,7 +164,12 @@
 
 ## Recent Git Commits
 
-- Fix webcam recording issues (file saving, pause/resume, stop handler)
+- **2025-01-31**: Remove all webcam recording functionality and fix video preview (2d3d0f5)
+  - Removed all webcam-related code (WebcamPreview, IPC handlers, Redux state)
+  - Fixed video preview from media library (click to preview)
+  - Fixed type conflicts between shared and renderer types
+  - Fixed video loading with key prop and explicit src updates
 - Fix EPIPE error when refreshing Electron app (console wrapping, IPC validation)
 - Fix EPIPE error by wrapping console methods (additional console method wrapping)
 - Multiple timeline fixes (M/S buttons, playhead movement, clip transitions)
+- Fix webcam recording issues (file saving, pause/resume, stop handler) - removed
