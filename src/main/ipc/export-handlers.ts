@@ -95,34 +95,52 @@ export function registerExportHandlers() {
         timeline,
         settings,
         (progress: FFmpegProgress) => {
-          // Send progress update to renderer
-          event.sender.send('export:progress', {
-            jobId,
-            progress: {
-              isExporting: true,
-              progress: progress.progress,
-              currentFrame: progress.currentFrame,
-              totalFrames: progress.totalFrames,
-              currentTime: progress.currentTime,
-              totalTime: progress.totalTime,
-              speed: progress.speed,
-              eta: progress.eta
+          // Send progress update to renderer (check if still connected)
+          if (!event.sender.isDestroyed()) {
+            try {
+              event.sender.send('export:progress', {
+                jobId,
+                progress: {
+                  isExporting: true,
+                  progress: progress.progress,
+                  currentFrame: progress.currentFrame,
+                  totalFrames: progress.totalFrames,
+                  currentTime: progress.currentTime,
+                  totalTime: progress.totalTime,
+                  speed: progress.speed,
+                  eta: progress.eta
+                }
+              })
+            } catch (error) {
+              // Renderer was destroyed, ignore
             }
-          })
+          }
         },
         (outputPath: string) => {
-          // Send completion notification
-          event.sender.send('export:complete', {
-            jobId,
-            outputPath
-          })
+          // Send completion notification (check if still connected)
+          if (!event.sender.isDestroyed()) {
+            try {
+              event.sender.send('export:complete', {
+                jobId,
+                outputPath
+              })
+            } catch (error) {
+              // Renderer was destroyed, ignore
+            }
+          }
         },
         (error: string) => {
-          // Send error notification
-          event.sender.send('export:error', {
-            jobId,
-            error
-          })
+          // Send error notification (check if still connected)
+          if (!event.sender.isDestroyed()) {
+            try {
+              event.sender.send('export:error', {
+                jobId,
+                error
+              })
+            } catch (error) {
+              // Renderer was destroyed, ignore
+            }
+          }
         }
       )
       

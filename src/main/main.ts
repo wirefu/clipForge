@@ -8,6 +8,28 @@ let mainWindow: BrowserWindow | null = null
 
 const isDev = process.env.NODE_ENV === 'development'
 
+// Handle uncaught exceptions gracefully (especially EPIPE errors during refresh)
+process.on('uncaughtException', (error: Error) => {
+  // Ignore EPIPE (broken pipe) errors that occur when streams are closed during refresh
+  if (error.message.includes('EPIPE') || (error as any).code === 'EPIPE') {
+    // Silently ignore - this is expected when renderer refreshes
+    return
+  }
+  
+  // For other errors, log them but don't crash the app
+  console.error('Uncaught Exception:', error)
+})
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  // Ignore EPIPE errors
+  if (reason?.code === 'EPIPE' || reason?.message?.includes('EPIPE')) {
+    return
+  }
+  
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason)
+})
+
 function createWindow(): void {
   // Create the browser window
   mainWindow = new BrowserWindow({

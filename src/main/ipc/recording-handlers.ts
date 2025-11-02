@@ -72,19 +72,35 @@ export function registerRecordingHandlers() {
         
         // Send periodic progress updates
         const progressInterval = setInterval(() => {
+          // Check if renderer is still connected before sending
+          if (event.sender.isDestroyed()) {
+            clearInterval(progressInterval)
+            return
+          }
+          
           if (recordingService.isCurrentlyRecording()) {
             const duration = recordingService.getRecordingDuration()
-            event.sender.send(IPC_CHANNELS.RECORDING.PROGRESS, {
-              isRecording: true,
-              duration,
-              fileSize: 0, // TODO: Calculate actual file size
-              framerate: settings.framerate,
-              bitrate: settings.bitrate
-            })
+            try {
+              event.sender.send(IPC_CHANNELS.RECORDING.PROGRESS, {
+                isRecording: true,
+                duration,
+                fileSize: 0, // TODO: Calculate actual file size
+                framerate: settings.framerate,
+                bitrate: settings.bitrate
+              })
+            } catch (error) {
+              // Renderer was destroyed, clean up interval
+              clearInterval(progressInterval)
+            }
           } else {
             clearInterval(progressInterval)
           }
         }, 1000) // Update every second
+        
+        // Clean up interval when renderer is destroyed
+        event.sender.once('destroyed', () => {
+          clearInterval(progressInterval)
+        })
         
         return { success: true }
       } else {

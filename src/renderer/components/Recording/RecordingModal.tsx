@@ -104,13 +104,13 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
     try {
       let finalOutputPath = outputPath
       if (!finalOutputPath) {
-        const result = await selectRecordingOutputDir()
-        if (!result || !result.outputPath) {
+        const dir = await selectRecordingOutputDir()
+        if (!dir) {
           alert('Please select an output directory')
           return
         }
-        finalOutputPath = result.outputPath
-        setOutputPath(result.outputPath)
+        finalOutputPath = dir
+        setOutputPath(dir)
       }
 
       let sourceId: string
