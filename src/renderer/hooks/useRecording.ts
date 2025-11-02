@@ -26,8 +26,7 @@ export const useRecording = () => {
   // Load sources on mount
   useEffect(() => {
     loadScreenSources()
-    // Temporarily disabled webcam device loading for testing screen capture
-    // loadWebcamDevices()
+    loadWebcamDevices()
   }, [])
 
   // Listen for recording progress updates

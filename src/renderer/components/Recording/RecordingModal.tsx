@@ -91,16 +91,15 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       return
     }
 
-    // Temporarily disabled webcam validation for testing screen capture
-    // if (recordingType === 'webcam' && !selectedWebcamId) {
-    //   alert('Please select a webcam device first')
-    //   return
-    // }
+    if (recordingType === 'webcam' && !selectedWebcamId) {
+      alert('Please select a webcam device first')
+      return
+    }
 
-    // if (recordingType === 'both' && (!selectedSourceId || !selectedWebcamId)) {
-    //   alert('Please select both a screen source and webcam device')
-    //   return
-    // }
+    if (recordingType === 'both' && (!selectedSourceId || !selectedWebcamId)) {
+      alert('Please select both a screen source and webcam device')
+      return
+    }
 
     try {
       let finalOutputPath = outputPath
@@ -118,20 +117,19 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
       let sourceType: 'screen' | 'webcam'
       let selectedSource: RecordingSource | null = null
 
-      // Temporarily force screen recording only for testing
-      // if (recordingType === 'webcam') {
-      //   sourceId = selectedWebcamId
-      //   sourceType = 'webcam'
-      //   selectedSource = webcamDevices.find(device => device.id === selectedWebcamId) || null
-      // } else if (recordingType === 'both') {
-      //   sourceId = selectedSourceId
-      //   sourceType = 'screen'
-      //   selectedSource = sources.find(source => source.id === selectedSourceId) || null
-      // } else {
-      sourceId = selectedSourceId
-      sourceType = 'screen'
-      selectedSource = sources.find(source => source.id === selectedSourceId) || null
-      // }
+      if (recordingType === 'webcam') {
+        sourceId = selectedWebcamId
+        sourceType = 'webcam'
+        selectedSource = webcamDevices.find(device => device.id === selectedWebcamId) || null
+      } else if (recordingType === 'both') {
+        sourceId = selectedSourceId
+        sourceType = 'screen'
+        selectedSource = sources.find(source => source.id === selectedSourceId) || null
+      } else {
+        sourceId = selectedSourceId
+        sourceType = 'screen'
+        selectedSource = sources.find(source => source.id === selectedSourceId) || null
+      }
 
       if (!selectedSource) {
         alert('Selected source not found. Please refresh and try again.')
@@ -210,7 +208,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
         <div className="recording-modal-content">
           {!isRecording ? (
             <>
-              {/* Recording Type Selection - Temporarily disabled webcam options for testing screen capture */}
+              {/* Recording Type Selection */}
               <div className="recording-section">
                 <h3>Recording Type</h3>
                 <div className="recording-type-selector">
@@ -224,7 +222,6 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                     />
                     <span>Screen Only</span>
                   </label>
-                  {/* Temporarily disabled for testing screen capture
                   <label className="recording-type-option">
                     <input
                       type="radio"
@@ -245,21 +242,22 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                     />
                     <span>Screen + Webcam</span>
                   </label>
-                  */}
                 </div>
               </div>
 
-              {/* Source Selection - Always show for screen capture testing */}
-              <div className="recording-section">
-                <h3>Screen Source</h3>
-                <SourceSelector
-                  onSourceSelect={handleSourceSelect}
-                  selectedSourceId={selectedSourceId}
-                />
-              </div>
+              {/* Source Selection */}
+              {(recordingType === 'screen' || recordingType === 'both') && (
+                <div className="recording-section">
+                  <h3>Screen Source</h3>
+                  <SourceSelector
+                    onSourceSelect={handleSourceSelect}
+                    selectedSourceId={selectedSourceId}
+                  />
+                </div>
+              )}
 
-              {/* Webcam Selection - Temporarily disabled for testing screen capture */}
-              {/* {(recordingType === 'webcam' || recordingType === 'both') && (
+              {/* Webcam Selection */}
+              {(recordingType === 'webcam' || recordingType === 'both') && (
                 <div className="recording-section">
                   <h3>Webcam Device</h3>
                   <div className="webcam-selection">
@@ -293,7 +291,7 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                     </div>
                   </div>
                 </div>
-              )} */}
+              )}
 
               {/* Recording Settings */}
               <div className="recording-section">
@@ -395,13 +393,30 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
                 <button
                   className="btn btn-primary start-btn"
                   onClick={handleStartRecording}
-                  disabled={!selectedSourceId}
+                  disabled={
+                    (recordingType === 'screen' && !selectedSourceId) ||
+                    (recordingType === 'webcam' && !selectedWebcamId) ||
+                    (recordingType === 'both' && (!selectedSourceId || !selectedWebcamId))
+                  }
                   style={{ 
-                    backgroundColor: selectedSourceId ? '#007acc' : '#555',
-                    opacity: selectedSourceId ? 1 : 0.6 
+                    backgroundColor: (
+                      (recordingType === 'screen' && selectedSourceId) ||
+                      (recordingType === 'webcam' && selectedWebcamId) ||
+                      (recordingType === 'both' && selectedSourceId && selectedWebcamId)
+                    ) ? '#007acc' : '#555',
+                    opacity: (
+                      (recordingType === 'screen' && selectedSourceId) ||
+                      (recordingType === 'webcam' && selectedWebcamId) ||
+                      (recordingType === 'both' && selectedSourceId && selectedWebcamId)
+                    ) ? 1 : 0.6 
                   }}
                 >
-                  🎬 Start Recording {selectedSourceId ? '✓' : '✗'}
+                  🎬 Start Recording {
+                    (recordingType === 'screen' && selectedSourceId) ||
+                    (recordingType === 'webcam' && selectedWebcamId) ||
+                    (recordingType === 'both' && selectedSourceId && selectedWebcamId)
+                      ? '✓' : '✗'
+                  }
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -416,7 +431,11 @@ export const RecordingModal: React.FC<RecordingModalProps> = ({
             <div className="recording-in-progress">
               <div className="recording-status">
                 <h3>🎬 Recording in Progress</h3>
-                <p>Recording: {sources.find(s => s.id === selectedSourceId)?.name || 'Unknown'}</p>
+                <p>Recording: {
+                  recordingType === 'webcam' 
+                    ? webcamDevices.find(s => s.id === selectedWebcamId)?.name || 'Unknown'
+                    : sources.find(s => s.id === selectedSourceId)?.name || 'Unknown'
+                }</p>
                 <p>Resolution: {recordingSettings.resolution?.width}x{recordingSettings.resolution?.height}</p>
                 <p>Frame Rate: {recordingSettings.framerate} fps</p>
                 {recordingSettings.audioEnabled && <p>Audio: Enabled</p>}
