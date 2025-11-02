@@ -72,7 +72,22 @@ export class RecordingService {
         let output = ''
         
         ffmpeg.stderr.on('data', (data) => {
-          output += data.toString()
+          try {
+            output += data.toString()
+          } catch (error: any) {
+            // Ignore EPIPE errors when stream is closed
+            if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+              console.error('Error reading FFmpeg stderr:', error)
+            }
+          }
+        })
+
+        // Handle stderr errors (EPIPE when stream closes)
+        ffmpeg.stderr.on('error', (error: any) => {
+          // Silently ignore EPIPE errors - expected when stream closes during refresh
+          if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+            reject(error)
+          }
         })
         
         ffmpeg.on('close', (code) => {
@@ -114,7 +129,15 @@ export class RecordingService {
           resolve({ video: videoDevices, audio: audioDevices })
         })
         
-        ffmpeg.on('error', reject)
+        ffmpeg.on('error', (error: any) => {
+          // Ignore EPIPE errors
+          if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+            reject(error)
+          } else {
+            // Resolve with empty arrays on EPIPE
+            resolve({ video: [], audio: [] })
+          }
+        })
       })
     } catch (error) {
       console.error('Error getting FFmpeg devices:', error)
@@ -156,10 +179,28 @@ export class RecordingService {
 
       // Add stderr logging to see FFmpeg output
       this.recordingProcess.stderr?.on('data', (data) => {
+        // FFmpeg outputs info to stderr, but we don't need to log it
+      })
+
+      // Handle stderr errors (EPIPE when stream closes)
+      this.recordingProcess.stderr?.on('error', (error: any) => {
+        // Silently ignore EPIPE errors - expected when stream closes during refresh
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('Recording stderr stream error:', error)
+        }
       })
 
       // Add stdout logging
       this.recordingProcess.stdout?.on('data', (data) => {
+        // Recording output, but we don't need to log it
+      })
+
+      // Handle stdout errors (EPIPE when stream closes)
+      this.recordingProcess.stdout?.on('error', (error: any) => {
+        // Silently ignore EPIPE errors - expected when stream closes during refresh
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('Recording stdout stream error:', error)
+        }
       })
 
       this.isRecording = true
@@ -185,14 +226,35 @@ export class RecordingService {
         return { success: false, error: 'No recording in progress' }
       }
 
+      // Remove all listeners to prevent EPIPE errors during cleanup
+      if (this.recordingProcess.stdout) {
+        this.recordingProcess.stdout.removeAllListeners()
+      }
+      if (this.recordingProcess.stderr) {
+        this.recordingProcess.stderr.removeAllListeners()
+      }
+      if (this.recordingProcess.stdin) {
+        this.recordingProcess.stdin.removeAllListeners()
+      }
+
       // Send 'q' to FFmpeg to quit gracefully
-      this.recordingProcess.stdin?.write('q\n')
+      try {
+        this.recordingProcess.stdin?.write('q\n')
+      } catch (error: any) {
+        // Ignore EPIPE errors when stdin is closed
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('Error writing to FFmpeg stdin:', error)
+        }
+      }
       
       // Wait for process to exit
       await new Promise((resolve) => {
         this.recordingProcess?.on('exit', resolve)
         setTimeout(resolve, 5000) // Timeout after 5 seconds
       })
+
+      // Remove all remaining listeners
+      this.recordingProcess.removeAllListeners()
 
       this.isRecording = false
       const outputPath = this.outputPath
@@ -225,6 +287,42 @@ export class RecordingService {
       return 0
     }
     return Date.now() - this.startTime
+  }
+
+  /**
+   * Cleanup child process - called when renderer is destroyed
+   */
+  cleanup(): void {
+    if (this.recordingProcess) {
+      // Remove all listeners to prevent EPIPE errors during cleanup
+      if (this.recordingProcess.stdout) {
+        this.recordingProcess.stdout.removeAllListeners()
+      }
+      if (this.recordingProcess.stderr) {
+        this.recordingProcess.stderr.removeAllListeners()
+      }
+      if (this.recordingProcess.stdin) {
+        this.recordingProcess.stdin.removeAllListeners()
+      }
+      this.recordingProcess.removeAllListeners()
+
+      // Kill the process if still running
+      if (this.isRecording) {
+        try {
+          this.recordingProcess.kill('SIGTERM')
+        } catch (error: any) {
+          // Ignore EPIPE errors
+          if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+            console.error('Error killing recording process:', error)
+          }
+        }
+      }
+
+      this.isRecording = false
+      this.recordingProcess = null
+      this.outputPath = null
+      this.startTime = null
+    }
   }
 
   /**

@@ -25,9 +25,31 @@ export class FFmpegService {
     return new Promise((resolve) => {
       const ffmpeg = spawn('ffmpeg', ['-version'])
       
-      ffmpeg.on('error', () => {
-        console.error('FFmpeg not found. Please install FFmpeg to use export functionality.')
-        resolve(false)
+      // Handle stdout errors (EPIPE when stream closes)
+      ffmpeg.stdout?.on('error', (error: any) => {
+        // Silently ignore EPIPE errors - expected when stream closes during refresh
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('FFmpeg stdout stream error:', error)
+        }
+      })
+
+      // Handle stderr errors (EPIPE when stream closes)
+      ffmpeg.stderr?.on('error', (error: any) => {
+        // Silently ignore EPIPE errors - expected when stream closes during refresh
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('FFmpeg stderr stream error:', error)
+        }
+      })
+      
+      ffmpeg.on('error', (error: any) => {
+        // Ignore EPIPE errors
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('FFmpeg not found. Please install FFmpeg to use export functionality.')
+          resolve(false)
+        } else {
+          // Assume FFmpeg is available on EPIPE (process might have exited cleanly)
+          resolve(true)
+        }
       })
       
       ffmpeg.on('close', (code) => {
@@ -66,17 +88,47 @@ export class FFmpegService {
 
       // Handle stdout for progress parsing
       this.process.stdout?.on('data', (data) => {
-        const progress = this.parseProgress(data.toString())
-        if (progress) {
-          onProgress(progress)
+        try {
+          const progress = this.parseProgress(data.toString())
+          if (progress) {
+            onProgress(progress)
+          }
+        } catch (error: any) {
+          // Ignore EPIPE errors when stream is closed
+          if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+            console.error('Error parsing FFmpeg stdout:', error)
+          }
+        }
+      })
+
+      // Handle stdout errors (EPIPE when stream closes)
+      this.process.stdout?.on('error', (error: any) => {
+        // Silently ignore EPIPE errors - expected when stream closes during refresh
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('FFmpeg stdout stream error:', error)
         }
       })
 
       // Handle stderr for progress parsing (FFmpeg outputs progress to stderr)
       this.process.stderr?.on('data', (data) => {
-        const progress = this.parseProgress(data.toString())
-        if (progress) {
-          onProgress(progress)
+        try {
+          const progress = this.parseProgress(data.toString())
+          if (progress) {
+            onProgress(progress)
+          }
+        } catch (error: any) {
+          // Ignore EPIPE errors when stream is closed
+          if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+            console.error('Error parsing FFmpeg stderr:', error)
+          }
+        }
+      })
+
+      // Handle stderr errors (EPIPE when stream closes)
+      this.process.stderr?.on('error', (error: any) => {
+        // Silently ignore EPIPE errors - expected when stream closes during refresh
+        if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+          console.error('FFmpeg stderr stream error:', error)
         }
       })
 
@@ -267,9 +319,30 @@ export class FFmpegService {
 
   cancelExport(): void {
     if (this.process && this.isRunning) {
+      // Remove all listeners to prevent EPIPE errors during cleanup
+      if (this.process.stdout) {
+        this.process.stdout.removeAllListeners()
+      }
+      if (this.process.stderr) {
+        this.process.stderr.removeAllListeners()
+      }
+      if (this.process.stdin) {
+        this.process.stdin.removeAllListeners()
+      }
+      this.process.removeAllListeners()
+      
+      // Kill the process
       this.process.kill('SIGTERM')
       this.isRunning = false
+      this.process = null
     }
+  }
+
+  /**
+   * Cleanup child process - called when renderer is destroyed
+   */
+  cleanup(): void {
+    this.cancelExport()
   }
 
   isExportRunning(): boolean {

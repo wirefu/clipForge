@@ -2,6 +2,8 @@ import { app, BrowserWindow, shell, protocol } from 'electron'
 import { join } from 'path'
 import { setupIpcHandlers } from './ipc'
 import { createMenu } from './menu'
+import { ffmpegService } from './services/ffmpeg.service'
+import { recordingService } from './services/recording.service'
 
 
 let mainWindow: BrowserWindow | null = null
@@ -103,6 +105,14 @@ function createWindow(): void {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)
     return { action: 'deny' }
+  })
+
+  // Cleanup child processes when renderer is destroyed (e.g., during refresh)
+  mainWindow.webContents.on('destroyed', () => {
+    // Cleanup FFmpeg export processes
+    ffmpegService.cleanup()
+    // Cleanup recording processes
+    recordingService.cleanup()
   })
 }
 
