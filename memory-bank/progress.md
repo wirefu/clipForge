@@ -1,10 +1,32 @@
 # Progress: ClipForge Development Status
 
 ## Overall Progress
-**Status**: Core features implemented, export features partially complete  
+**Status**: Core features implemented, EPIPE error during refresh persists  
 **Phase**: Phase 2 - Full Submission Features  
 **Timeline**: Advanced development phase  
 **Completion**: ~75% (Core MVP + Advanced Timeline + Recording + Preview + Export)
+
+## Current Known Issues
+
+### 🔴 EPIPE Error During App Refresh (PERSISTENT)
+**Priority**: High  
+**Status**: Ongoing issue despite multiple fixes
+
+**Description**: EPIPE (broken pipe) error occurs when refreshing the Electron app. Error originates from console methods or child process streams (FFmpeg) writing to closed pipes.
+
+**Attempted Fixes**:
+1. ✅ Wrapped console methods to catch EPIPE errors
+2. ✅ Added IPC sender validation before sending messages
+3. ✅ Added interval cleanup when renderer is destroyed
+4. ✅ Added global uncaught exception handlers
+5. ❌ **Issue persists** - likely from FFmpeg child process streams
+
+**Root Cause**: Child processes (FFmpeg) may still be writing to stdout/stderr streams when the renderer refreshes, causing EPIPE errors when trying to write to closed pipes.
+
+**Next Steps**: 
+- Add error handlers to child process streams (stdout/stderr)
+- Cleanup/kill child processes on renderer destroy
+- Consider using stream error handlers for FFmpeg processes
 
 ## What Works (Completed)
 
@@ -22,16 +44,17 @@
 ### ✅ Recording Features (Fully Implemented)
 - **Screen Recording**: FFmpeg-based screen recording via avfoundation
 - **Webcam Recording**: MediaRecorder API in renderer process (architectural fix for resource contention)
-- **Recording Controls**: Start/stop, duration timer, quality settings
+- **Recording Controls**: Start/stop, pause/resume, duration timer, quality settings
 - **Device Management**: Camera and microphone device selection
 - **Recording Status**: Synchronized between main and renderer processes
-- **File Output**: Recordings saved directly to media library
+- **File Output**: Recordings saved via Electron file system API
 
 **Key Implementation Notes**:
 - Webcam recording uses pure browser approach (MediaRecorder) to avoid FFmpeg resource contention
 - Screen recording uses FFmpeg with proper parameter handling
 - IPC handlers prevent duplicate registration during hot reloads
 - Timer cleanup prevents memory leaks
+- **Recent Fixes**: File saving uses Electron API, pause/resume implemented, stop handler waits for save completion
 
 ### ✅ Import & Media Management (Fully Implemented)
 - **Drag & Drop**: Video/audio/image file import with visual feedback
@@ -49,307 +72,95 @@
 - Proper error handling and fallback metadata
 
 ### ✅ Timeline Editor (Fully Implemented)
-- **Timeline Component**: Complete timeline with time ruler, tracks, and playhead
-- **Multi-Track Support**: Multiple video and audio tracks (Main Video, Overlay/PiP)
-- **Clip Operations**: 
-  - Drag clips onto timeline with snapping
-  - Drag clips left/right to reposition
-  - Trim clips with drag handles
-  - Split clips at playhead position
-  - Delete clips
+- **Multi-clip Timeline**: Visual timeline with multiple tracks and clips
+- **Clip Manipulation**: Drag clips horizontally, trim start/end, split at playhead
+- **Time Ruler**: Dynamic time markers based on total duration
 - **Playhead**: Draggable playhead with snapping (grid and clip edges)
-- **Zoom Controls**: Zoom in/out buttons (10-500 pixels per second range)
-- **Snap-to-Grid**: Grid snapping enabled/disabled
-- **Snap-to-Clip-Edges**: Automatic snapping to clip boundaries
-- **Track Controls**: Mute (M) and Solo (S) buttons per track
-- **Keyboard Shortcuts**: Delete, Split (S), Zoom (Cmd/Ctrl +/=)
+- **Zoom Controls**: Zoom in/out (10-500 pixels per second)
+- **Snap to Grid**: Grid snapping with configurable grid size
+- **Track Controls**: Mute (M) and Solo (S) buttons for tracks
+- **Keyboard Shortcuts**: Delete (Del), Split (S), Zoom (+/-)
+- **Event Handling**: Proper event propagation handling (M/S buttons don't move playhead)
 
 **Key Implementation Notes**:
-- Complete rebuild from scratch following ClipForge.md requirements (lines 85-93)
-- Redux state management for all timeline operations
-- Snapping logic: grid takes priority over clip edges
-- Event propagation fixes prevent unintended playhead movement
-- Dynamic total duration calculation from clips
+- Completely rebuilt from scratch to meet requirements
+- Time calculations use seconds internally, converted to pixels for display
+- Snap to grid always snaps when enabled (no threshold)
+- Clip edge snapping only when grid snapping is disabled
+- Proper state management with Redux
 
-### ✅ Preview & Playback (Fully Implemented)
-- **TimelinePreview Component**: Real-time preview of timeline composition
-- **Multi-Clip Playback**: Automatically switches between clips during playback
-- **Play/Pause Controls**: Toolbar button and keyboard shortcut (Space bar)
+### ✅ Timeline Preview (Fully Implemented)
+- **Real-time Preview**: Shows timeline composition with all clips
+- **Multi-clip Playback**: Automatically switches between clips during playback
+- **Play/Pause Controls**: Toolbar controls and keyboard shortcuts (Space bar)
 - **Scrubbing**: Dragging playhead seeks video to correct position
 - **Audio Synchronization**: Audio and video synchronized during playback
-- **Frame Accuracy**: Preview shows current frame at playhead position when paused
-- **Clip Transitions**: Handles transitions between clips smoothly
+- **Frame-accurate Preview**: Shows current frame at playhead position when paused
 
 **Key Implementation Notes**:
-- Finds active clip at current timeline time
-- Handles clip trim points correctly
-- Automatically transitions to next clip when current one ends
-- Video seeking and playback state management
+- TimelinePreview component handles multi-clip composition
+- Automatic clip transitions during playback
+- Proper seeking and time synchronization
 
-### ✅ Export Features (Partially Implemented)
-- **Export to MP4**: FFmpeg-based export functionality
-- **Resolution Options**: 
-  - ✅ 720p preset available
-  - ✅ 1080p preset available
-  - ✅ Manual resolution entry in advanced settings
-  - ❌ "Source resolution" option missing (hardcoded to 1920x1080)
-- **Progress Indicator**: Real-time progress with percentage, time, speed, ETA
-- **Save to Local File System**: File dialog for output directory selection
-- **Export Modal**: Full settings UI with presets and advanced options
-- **Export Settings**: Format, quality, bitrate, framerate, audio options
-
-**Missing Features**:
-- ❌ "Source resolution" option (should detect from first video clip metadata)
-- ❌ Cloud storage upload (Google Drive, Dropbox)
-- ❌ Shareable link generation
+### ⚠️ Export Features (Partially Implemented)
+- **Export to MP4**: FFmpeg-based export functionality ✅
+- **Progress Indicator**: Percentage, time, speed, ETA display ✅
+- **Save to Local File System**: File dialog for output selection ✅
+- **Resolution Options**: 720p and 1080p presets exist ⚠️
+  - ⚠️ **Missing**: "Source resolution" option/button
+  - Current implementation hardcodes 1920x1080 even though MediaFile has metadata.width/height
+- **Cloud Storage**: Not implemented ❌
 
 **Key Implementation Notes**:
-- FFmpeg service handles clip concatenation, trimming, and encoding
-- Progress tracking via FFmpeg stdout parsing
-- Export timeline conversion from Redux state
-- Multiple export presets defined (YouTube, Instagram, TikTok formats)
+- Export uses FFmpeg service with progress tracking
+- Settings include resolution, quality, format options
+- Need to add "source resolution" preset option
 
-## What's Left to Build (Pending)
+## What Doesn't Work (Known Issues)
 
-### 🔄 Export Features Completion
-- [ ] **Source Resolution Option**: Detect and use source video resolution from metadata
-- [ ] **Cloud Storage Integration**: Upload to Google Drive, Dropbox
-- [ ] **Shareable Links**: Generate shareable links for exported videos
+### ❌ EPIPE Error During Refresh (PERSISTENT)
+- Error occurs when refreshing Electron app
+- Likely caused by child process streams (FFmpeg) writing to closed pipes
+- Multiple fixes attempted but issue persists
 
-### 🔄 Additional Features (Stretch Goals)
-- [ ] **Text Overlays**: Add text with custom fonts and animations
-- [ ] **Transitions**: Fade, slide, and other transitions between clips
-- [ ] **Audio Controls**: Volume adjustment per clip/track, fade in/out
-- [ ] **Filters and Effects**: Brightness, contrast, saturation adjustments
-- [ ] **Export Presets**: Platform-specific presets (partially done)
-- [ ] **Keyboard Shortcuts**: Comprehensive shortcut system (partially done)
-- [ ] **Auto-save**: Project state persistence
-- [ ] **Undo/Redo Functionality**: Action history and reversal
+### ⚠️ Export: Source Resolution Option Missing
+- UI has 720p and 1080p presets
+- No "source resolution" option available
+- Need to add button/option that uses source video's resolution from metadata
 
-### 🔄 Packaging and Build
-- [ ] **electron-builder**: macOS app packaging configuration
-- [ ] **App Bundle**: .app file creation
-- [ ] **DMG Installer**: macOS installer creation
-- [ ] **Code Signing**: Optional code signing setup
+### ❌ Simultaneous Screen + Webcam (PiP) Not Implemented
+- UI has "both" recording type option
+- No actual picture-in-picture compositing implemented
+- When "both" is selected, it only records screen, not composite
+- Need canvas compositing logic for PiP
 
-### 🔄 Testing and Quality
-- [ ] **Unit Tests**: Component and utility testing
-- [ ] **Integration Tests**: Feature workflow testing
-- [ ] **E2E Tests**: Playwright end-to-end tests
-- [ ] **Performance Testing**: Timeline performance with many clips
-- [ ] **Memory Leak Testing**: Long session stability
+### ❌ Auto-add Recordings to Timeline
+- Recordings save to file system ✅
+- Recordings NOT automatically added to timeline ❌
+- Need to implement auto-import of recorded files into media library and timeline
 
-## Current Status by Component
+## Technical Debt
 
-### Main Process (Electron)
-- **Status**: ✅ Fully functional
-- **Completed**: 
-  - IPC handlers (recording, export, media import, file operations)
-  - FFmpeg service for screen recording and export
-  - Recording service with proper parameter handling
-  - Thumbnail generation service
-  - File utilities with metadata extraction (ffprobe)
-- **Pending**: Packaging configuration
-- **Priority**: Medium (core functionality complete)
+### Process Management
+- Need error handlers on child process streams (FFmpeg stdout/stderr)
+- Need cleanup/kill child processes on renderer destroy
+- EPIPE error handling needs improvement
 
-### Renderer Process (React)
-- **Status**: ✅ Core features complete
-- **Completed**: 
-  - Recording modal and controls
-  - Media library with drag & drop
-  - Timeline editor with full feature set
-  - Timeline preview component
-  - Export modal with progress tracking
-  - Redux store integration
-  - All core UI components
-- **Pending**: Undo/redo, advanced effects, text overlays
-- **Priority**: Medium (stretch goals)
+### Console Logging
+- Wrapped console methods to handle EPIPE, but issue persists
+- May need to handle at child process stream level instead
 
-### Preload Scripts
-- **Status**: ✅ Complete
-- **Completed**: Full IPC bridge implementation
-- **Pending**: None
-- **Priority**: Low (fully functional)
+## Next Priority Tasks
 
-### Services Layer
-- **Status**: ✅ Core services complete
-- **Completed**: 
-  - FFmpeg service (recording and export)
-  - Recording service
-  - Thumbnail service
-  - Metadata extraction with ffprobe
-- **Pending**: Cloud storage service
-- **Priority**: Low (bonus feature)
+1. **HIGH**: Fix EPIPE error during refresh (add child process stream error handlers)
+2. **MEDIUM**: Implement "source resolution" option for export
+3. **MEDIUM**: Implement picture-in-picture (PiP) recording compositing
+4. **MEDIUM**: Auto-add recordings to timeline after save
+5. **LOW**: Implement cloud storage upload (Google Drive, Dropbox)
 
-### State Management (Redux)
-- **Status**: ✅ Fully integrated
-- **Completed**: 
-  - Recording slice
-  - Timeline slice (clips, tracks, playhead, zoom, snap)
-  - Media library slice
-  - Export slice
-- **Pending**: Undo/redo history slice
-- **Priority**: Low (stretch goal)
+## Recent Git Commits
 
-## Recent Bug Fixes and Improvements
-
-### Timeline Fixes
-1. **Timeline Rebuild**: Complete rebuild from scratch following requirements
-2. **Zoom/Snap Fix**: Fixed zoom and snap buttons not responding
-3. **Mute/Solo Fix**: Fixed M and S buttons moving playhead (event propagation)
-4. **Clip Transitions**: Fixed TimelinePreview to properly detect and transition between clips
-5. **Dynamic Duration**: Timeline calculates total duration from clips dynamically
-
-### Recording Fixes
-1. **Resource Contention**: Fixed webcam recording by moving to MediaRecorder API
-2. **Status Synchronization**: Fixed recording status sync between main and renderer
-3. **Timer Cleanup**: Fixed memory leaks in recording timer
-4. **FFmpeg Parameters**: Fixed screen recording FFmpeg parameters
-
-### Code Quality
-1. **Console Log Cleanup**: Removed excessive console.log statements
-2. **Linter Errors**: Fixed all TypeScript and ESLint errors
-3. **Event Handling**: Fixed event propagation issues
-4. **Type Safety**: Improved type definitions and null handling
-
-## Implementation Details
-
-### Architecture Decisions
-1. **Webcam Recording**: Pure browser approach (MediaRecorder) instead of FFmpeg to avoid resource contention
-2. **Timeline State**: Redux for global state, removed local React state conflicts
-3. **Metadata Extraction**: Single ffprobe call per file for efficiency
-4. **IPC Handlers**: Global flag prevents duplicate registration during hot reloads
-
-### Code Patterns
-1. **DRY Principle**: Reusable utility functions for timeline operations
-2. **KISS Principle**: Simple, maintainable solutions
-3. **Performance**: useCallback and useMemo for expensive operations
-4. **Error Handling**: Robust error handling throughout
-
-### File Structure
-```
-src/
-├── main/           # Electron main process
-│   ├── ipc/        # IPC handlers
-│   └── services/   # FFmpeg, recording, thumbnail services
-├── renderer/       # React application
-│   ├── components/ # UI components
-│   ├── store/      # Redux store and slices
-│   ├── hooks/      # Custom React hooks
-│   └── utils/      # Utility functions
-└── shared/         # Shared types and constants
-```
-
-## Known Issues and Limitations
-
-### Minor Issues
-1. **TimelinePreview**: Minor clip transition issues (user acknowledged, to fix later)
-2. **AbortError**: Video play() requests occasionally interrupted during clip transitions
-3. **Security Warnings**: Electron security warnings in dev mode (normal, suppressed in production)
-
-### Missing Features
-1. **Source Resolution**: Export doesn't detect source video resolution
-2. **Cloud Storage**: No cloud upload functionality
-3. **Shareable Links**: No link generation feature
-4. **Undo/Redo**: No action history system
-
-### Technical Debt
-- Minor: Some console errors during development (non-blocking)
-- Low: Export resolution hardcoded instead of using source metadata
-- Medium: No comprehensive test coverage yet
-
-## Success Metrics Tracking
-
-### MVP Success Criteria
-- [x] App launches successfully
-- [x] Can import MP4/MOV files
-- [x] Timeline displays imported clips
-- [x] Video preview plays clips
-- [x] Basic trim functionality works
-- [x] Can export to MP4
-- [ ] App packages as native .app (pending)
-
-### Core Features Success Criteria
-- [x] Screen recording works
-- [x] Webcam recording works
-- [x] Multi-clip timeline editing
-- [x] Clip trimming and splitting
-- [x] Zoom and snap functionality
-- [x] Real-time timeline preview
-- [x] Export with progress tracking
-
-### Performance Targets
-- [x] Timeline responsive with 10+ clips
-- [x] Preview smooth at 30fps
-- [x] Export completes without crashes
-- [x] App launches quickly
-- [x] No major memory leaks detected
-
-## Recent Commits Summary
-
-### Latest Session Commits
-- **TimelinePreview**: Fixed clip transitions and detection
-- **Export**: Fixed error prop null handling
-- **Linting**: Fixed all linter errors
-- **Timeline Preview**: Implemented real-time composition preview
-- **Mute/Solo**: Fixed button event propagation
-- **Snap-to-Grid**: Fixed snapping functionality
-- **Zoom**: Fixed zoom button responsiveness
-- **Metadata**: Implemented proper ffprobe extraction
-
-### Branch Status
-- **Current Branch**: `feature/PR-14-webcam-recording`
-- **Status**: All changes committed and pushed to GitHub
-- **Remote**: `origin` (git@github.com:wirefu/clipForge.git)
-
-## Next Steps
-
-### Immediate Actions
-1. ✅ **Export Features**: Review export implementation status
-2. ⏭️ **Source Resolution**: Implement source resolution detection for export
-3. ⏭️ **Testing**: Begin comprehensive testing of core features
-4. ⏭️ **Packaging**: Set up electron-builder for app packaging
-
-### Short-term (Next Session)
-1. Implement "Source resolution" option in export modal
-2. Test export functionality end-to-end
-3. Address TimelinePreview minor issues
-4. Begin app packaging setup
-
-### Medium-term
-1. Cloud storage integration (bonus feature)
-2. Shareable link generation
-3. Undo/redo functionality
-4. Advanced effects and transitions
-
-### Long-term
-1. Comprehensive test coverage
-2. Performance optimization
-3. UI/UX polish
-4. Documentation completion
-
-## Notes and Observations
-
-### Key Insights
-1. **Architecture Matters**: Moving webcam recording to browser solved resource contention
-2. **State Management**: Redux eliminated state synchronization issues
-3. **Metadata Extraction**: ffprobe provides accurate media information
-4. **User Feedback**: Quick fixes based on user testing improved quality
-
-### Lessons Learned
-1. **Resource Contention**: Multiple systems accessing same hardware requires careful architecture
-2. **Event Propagation**: UI interactions need careful event handling
-3. **Code Quality**: Regular cleanup (removing logs) improves development experience
-4. **Requirements**: Following specifications exactly prevents rework
-
-### Success Factors
-1. **Clear Requirements**: ClipForge.md provided clear feature specifications
-2. **Modern Stack**: Electron + React + Redux enabled rapid development
-3. **Iterative Development**: Small, focused commits enable quick fixes
-4. **User Testing**: Regular user feedback caught issues early
-
-## Last Updated
-**Date**: Current session  
-**Status**: Core features implemented, export features partially complete  
-**Completion**: ~75% of full submission requirements  
-**Next Review**: After export source resolution implementation
+- Fix webcam recording issues (file saving, pause/resume, stop handler)
+- Fix EPIPE error when refreshing Electron app (console wrapping, IPC validation)
+- Fix EPIPE error by wrapping console methods (additional console method wrapping)
+- Multiple timeline fixes (M/S buttons, playhead movement, clip transitions)
