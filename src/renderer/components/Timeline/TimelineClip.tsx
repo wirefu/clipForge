@@ -48,7 +48,8 @@ function TimelineClip({ clip, timelineWidth, totalDuration, onUpdateClip, onSele
       onUpdateClip(clip.id, { trimEnd: Math.min(newTrimEnd, clip.duration) })
     } else if (isDragging === 'center') {
       // Dragging entire clip - start is in seconds
-      const newStart = Math.max(0, Math.min(clip.start + deltaTimeInSeconds, totalDuration - clip.duration))
+      // Allow clips to extend beyond current totalDuration - it will be recalculated on next render
+      const newStart = Math.max(0, clip.start + deltaTimeInSeconds)
       onUpdateClip(clip.id, { start: newStart })
     }
   }, [isDragging, dragStart, timelineWidth, totalDuration, clip.id, clip.trimEnd, clip.trimStart, clip.duration, clip.start, onUpdateClip])
