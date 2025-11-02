@@ -182,13 +182,9 @@ function Editor() {
       
       <div className="editor-bottom">
         <Timeline 
-          clips={timelineClips}
-          currentTime={currentTime}
           onTimeUpdate={handleTimeUpdate}
           onAddClip={handleAddClip}
           onUpdateClip={handleUpdateClip}
-          onSelectClip={handleSelectClip}
-          selectedClipId={selectedClipId}
           onExport={() => {
             setShowExportModal(true)
           }}

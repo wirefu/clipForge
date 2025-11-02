@@ -1,224 +1,308 @@
-import { useState, useRef } from 'react'
-import { TimelineProps } from '../../types'
-import TimelineClip from './TimelineClip'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from '../../store'
+import { TimelineClip } from '../../types'
+import {
+  setPlayheadPosition,
+  setZoomLevel,
+  setSnapToGrid,
+  splitClip,
+  removeClip,
+  selectClip
+} from '../../store/slices/timeline.slice'
+import {
+  timeToPixels,
+  pixelsToTime,
+  formatTime,
+  calculateTotalDuration,
+  getClipEdges
+} from '../../utils/timeline.utils'
+import TimeRuler from './TimeRuler'
+import Playhead from './Playhead'
+import TimelineTrack from './TimelineTrack'
 import './Timeline.css'
 
-interface TimelineComponentProps extends Omit<TimelineProps, 'onAddClip'> {
-  onUpdateClip?: (clipId: string, updates: Partial<import('../../types').TimelineClip>) => void
-  onSelectClip?: (clipId: string) => void
-  selectedClipId?: string
-  onAddClip?: (clip: import('../../types').TimelineClip) => void
+interface TimelineProps {
+  onTimeUpdate: (time: number) => void
+  onAddClip: (clip: TimelineClip) => void
+  onUpdateClip: (clipId: string, updates: Partial<TimelineClip>) => void
   onExport?: () => void
   canExport?: boolean
 }
 
-function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip, selectedClipId, onAddClip, onExport, canExport }: TimelineComponentProps) {
+function Timeline({ onTimeUpdate, onAddClip, onUpdateClip, onExport, canExport }: TimelineProps) {
+  const dispatch = useDispatch()
   const timelineRef = useRef<HTMLDivElement>(null)
-  const [isDragging, setIsDragging] = useState(false)
-
-  // Calculate actual total duration from clips (in seconds)
-  const calculateTotalDuration = () => {
-    if (clips.length === 0) return 100 // Default to 100 seconds if no clips
-    const maxEndTime = Math.max(...clips.map(clip => clip.start + clip.duration))
-    return Math.max(100, Math.ceil(maxEndTime / 10) * 10) // Round up to nearest 10 seconds, minimum 100
-  }
-
-  const totalDuration = calculateTotalDuration()
-
-  const handleTimelineClick = (e: React.MouseEvent) => {
-    if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect()
-      const clickX = e.clientX - rect.left
-      const timelineWidth = rect.width
-      const percentage = (clickX / timelineWidth) * 100
-      const timeInSeconds = (percentage / 100) * totalDuration
-      
-      onTimeUpdate((timeInSeconds / totalDuration) * 100)
+  
+  const {
+    tracks,
+    clips,
+    playheadPosition,
+    zoomLevel,
+    totalDuration: storedTotalDuration,
+    selectedClipId,
+    snapToGrid: snapToGridEnabled,
+    gridSize
+  } = useSelector((state: RootState) => state.timeline)
+  
+  // Calculate actual total duration from clips
+  const totalDuration = Math.max(60, calculateTotalDuration(clips))
+  
+  // Update total duration in store if needed
+  useEffect(() => {
+    if (totalDuration !== storedTotalDuration) {
+      dispatch({ type: 'timeline/setTotalDuration', payload: totalDuration })
     }
-  }
-
-  const handlePlayheadDrag = (e: React.MouseEvent) => {
-    if (timelineRef.current) {
-      const rect = timelineRef.current.getBoundingClientRect()
-      const dragX = e.clientX - rect.left
-      const timelineWidth = rect.width
-      const percentage = Math.max(0, Math.min(100, (dragX / timelineWidth) * 100))
-      const timeInSeconds = (percentage / 100) * totalDuration
-      
-      onTimeUpdate((timeInSeconds / totalDuration) * 100)
-    }
-  }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true)
-    handlePlayheadDrag(e)
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      handlePlayheadDrag(e)
-    }
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    
-    if (!onAddClip || !timelineRef.current) return
-
-    try {
-      // Get the media data from the drag event
-      const mediaData = e.dataTransfer.getData('application/json')
-      if (!mediaData) return
-
-      const media = JSON.parse(mediaData)
-      
-      // Calculate drop position
-      const rect = timelineRef.current.getBoundingClientRect()
-      const dropX = e.clientX - rect.left
-      const timelineWidth = rect.width
-      const percentage = (dropX / timelineWidth) * 100
-      const dropTimeInSeconds = (percentage / 100) * totalDuration
-      const mediaDuration = media.duration || 10
-
-      // Create a new timeline clip (start and duration are in seconds)
-      // Allow clips to extend beyond current totalDuration - it will be recalculated on next render
-      const newClip: import('../../types').TimelineClip = {
-        id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        mediaFileId: media.id,
-        trackId: 'track-1', // Default to first track
-        start: Math.max(0, dropTimeInSeconds),
-        duration: mediaDuration,
-        trimStart: 0,
-        trimEnd: mediaDuration,
-        volume: 1,
-        muted: false
+  }, [totalDuration, storedTotalDuration, dispatch])
+  
+  const [timelineWidth, setTimelineWidth] = useState(800)
+  
+  // Update timeline width on resize
+  useEffect(() => {
+    const updateWidth = () => {
+      if (timelineRef.current) {
+        setTimelineWidth(timelineRef.current.offsetWidth)
       }
-
-      onAddClip(newClip)
-    } catch (error) {
-      console.error('Error adding clip to timeline:', error)
-    }
-  }
-
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  const generateTimeMarkers = () => {
-    const markers = []
-    const interval = Math.max(10, Math.floor(totalDuration / 20)) // Adaptive interval, max 20 markers
-    
-    for (let i = 0; i <= totalDuration; i += interval) {
-      markers.push({
-        time: i,
-        position: (i / totalDuration) * 100
-      })
     }
     
-    return markers
-  }
-
-  const timeMarkers = generateTimeMarkers()
-
+    updateWidth()
+    window.addEventListener('resize', updateWidth)
+    return () => window.removeEventListener('resize', updateWidth)
+  }, [])
+  
+  // Synchronize scroll between ruler and tracks
+  useEffect(() => {
+    const rulerContainer = document.querySelector('.timeline-ruler-container')
+    const tracksContainer = document.querySelector('.timeline-tracks-container')
+    
+    if (!rulerContainer || !tracksContainer) return
+    
+    const syncScroll = (source: Element, target: Element) => {
+      return () => {
+        if (target.scrollLeft !== source.scrollLeft) {
+          target.scrollLeft = source.scrollLeft
+        }
+      }
+    }
+    
+    const handleRulerScroll = syncScroll(rulerContainer, tracksContainer)
+    const handleTracksScroll = syncScroll(tracksContainer, rulerContainer)
+    
+    rulerContainer.addEventListener('scroll', handleRulerScroll)
+    tracksContainer.addEventListener('scroll', handleTracksScroll)
+    
+    return () => {
+      rulerContainer.removeEventListener('scroll', handleRulerScroll)
+      tracksContainer.removeEventListener('scroll', handleTracksScroll)
+    }
+  }, [])
+  
+  // Handle timeline click (seek to time)
+  const handleTimelineClick = useCallback((e: React.MouseEvent) => {
+    const target = e.currentTarget as HTMLElement
+    if (!target) return
+    
+    const rect = target.getBoundingClientRect()
+    const clickX = e.clientX - rect.left
+    const scrollLeft = target.scrollLeft
+    const totalX = clickX + scrollLeft
+    const newTime = pixelsToTime(totalX, zoomLevel)
+    const clampedTime = Math.max(0, Math.min(newTime, totalDuration))
+    
+    dispatch(setPlayheadPosition(clampedTime))
+    onTimeUpdate(clampedTime)
+  }, [zoomLevel, totalDuration, dispatch, onTimeUpdate])
+  
+  // Zoom in/out
+  const handleZoomIn = useCallback(() => {
+    const newZoom = Math.min(zoomLevel * 1.5, 500) // Max 500px per second
+    dispatch(setZoomLevel(newZoom))
+  }, [zoomLevel, dispatch])
+  
+  const handleZoomOut = useCallback(() => {
+    const newZoom = Math.max(zoomLevel / 1.5, 10) // Min 10px per second
+    dispatch(setZoomLevel(newZoom))
+  }, [zoomLevel, dispatch])
+  
+  // Handle clip selection
+  const handleSelectClip = useCallback((clipId: string) => {
+    dispatch(selectClip(clipId))
+  }, [dispatch])
+  
+  // Handle clip deletion
+  const handleDeleteClip = useCallback((clipId: string) => {
+    dispatch(removeClip(clipId))
+  }, [dispatch])
+  
+  // Handle split at playhead
+  const handleSplitAtPlayhead = useCallback(() => {
+    if (!selectedClipId) return
+    
+    const clip = clips.find(c => c.id === selectedClipId)
+    if (!clip) return
+    
+    const clipStart = clip.start
+    const clipEnd = clip.start + clip.duration
+    
+    // Check if playhead is within clip bounds
+    if (playheadPosition >= clipStart && playheadPosition <= clipEnd) {
+      dispatch(splitClip({ clipId: selectedClipId, splitTime: playheadPosition }))
+    }
+  }, [selectedClipId, clips, playheadPosition, dispatch])
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete key - delete selected clip
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedClipId) {
+        e.preventDefault()
+        handleDeleteClip(selectedClipId)
+      }
+      
+      // S key - split clip at playhead
+      if (e.key === 's' || e.key === 'S') {
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault()
+          handleSplitAtPlayhead()
+        }
+      }
+      
+      // Plus/Minus keys - zoom
+      if (e.key === '+' || e.key === '=') {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          handleZoomIn()
+        }
+      }
+      if (e.key === '-' || e.key === '_') {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
+          handleZoomOut()
+        }
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedClipId, handleDeleteClip, handleSplitAtPlayhead, handleZoomIn, handleZoomOut])
+  
+  // Get all clip edges for snap-to-clip
+  const allClipEdges = getClipEdges(clips)
+  
+  // Calculate timeline content width
+  const timelineContentWidth = timeToPixels(totalDuration, zoomLevel)
+  
+  // Calculate zoom percentage for display
+  const zoomPercentage = Math.round((zoomLevel / 50) * 100)
+  
   return (
-    <div className="timeline">
+    <div className="timeline" ref={timelineRef}>
+      {/* Timeline Header */}
       <div className="timeline-header">
         <div className="timeline-controls">
-          <button className="timeline-btn">+</button>
-          <button className="timeline-btn">-</button>
-          <span className="zoom-level">100%</span>
+          <button
+            className="timeline-btn zoom-btn"
+            onClick={handleZoomOut}
+            title="Zoom Out (Ctrl/Cmd -)"
+          >
+            −
+          </button>
+          <span className="zoom-level">{zoomPercentage}%</span>
+          <button
+            className="timeline-btn zoom-btn"
+            onClick={handleZoomIn}
+            title="Zoom In (Ctrl/Cmd +)"
+          >
+            +
+          </button>
+          <div className="timeline-divider" />
+          <label className="snap-toggle">
+            <input
+              type="checkbox"
+              checked={snapToGridEnabled}
+              onChange={(e) => dispatch(setSnapToGrid(e.target.checked))}
+            />
+            <span>Snap</span>
+          </label>
         </div>
+        
         <div className="timeline-info">
-          <span>{formatTime((currentTime / 100) * totalDuration)}</span>
+          <span>{formatTime(playheadPosition)}</span>
           <span style={{ marginLeft: '20px', color: '#888' }}>
             Clips: {clips.length}
           </span>
         </div>
       </div>
       
+      {/* Timeline Content */}
       <div className="timeline-content">
-        <div className="timeline-tracks">
-          <div className="track-header">
-            <div className="track-label">Track 1</div>
-          </div>
+        {/* Time Ruler */}
+        <div className="timeline-ruler-container">
+          <TimeRuler
+            totalDuration={totalDuration}
+            zoomLevel={zoomLevel}
+            timelineWidth={timelineContentWidth}
+          />
+        </div>
+        
+        {/* Tracks */}
+        <div className="timeline-tracks-container" onClick={handleTimelineClick}>
+          {tracks.map(track => (
+            <TimelineTrack
+              key={track.id}
+              track={track}
+              zoomLevel={zoomLevel}
+              totalDuration={totalDuration}
+              selectedClipId={selectedClipId}
+              snapToGridEnabled={snapToGridEnabled}
+              gridSize={gridSize}
+              onUpdateClip={onUpdateClip}
+              onSelectClip={handleSelectClip}
+              onDeleteClip={handleDeleteClip}
+              onAddClip={onAddClip}
+            />
+          ))}
           
-          <div 
-            ref={timelineRef}
-            className="timeline-track"
-            onClick={handleTimelineClick}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
+          {/* Playhead - positioned over all tracks */}
+          <div
+            className="timeline-tracks-wrapper"
+            style={{ width: `${timelineContentWidth}px` }}
           >
-            <div className="timeline-ruler">
-              {timeMarkers.map(marker => (
-                <div
-                  key={marker.time}
-                  className="time-marker"
-                  style={{ left: `${marker.position}%` }}
-                >
-                  <div className="marker-line" />
-                  <div className="marker-label">{formatTime(marker.time)}</div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="timeline-clips">
-              {clips.map(clip => (
-                <TimelineClip
-                  key={clip.id}
-                  clip={clip}
-                  timelineWidth={timelineRef.current?.offsetWidth || 800}
-                  totalDuration={totalDuration}
-                  onUpdateClip={onUpdateClip || (() => {})}
-                  onSelectClip={onSelectClip || (() => {})}
-                  isSelected={selectedClipId === clip.id}
-                />
-              ))}
-            </div>
-            
-            <div 
-              className="playhead"
-              style={{ left: `${currentTime}%` }}
-              onMouseDown={handleMouseDown}
+            <Playhead
+              currentTime={playheadPosition}
+              zoomLevel={zoomLevel}
+              timelineWidth={timelineContentWidth}
+              totalDuration={totalDuration}
+              snapToGridEnabled={snapToGridEnabled}
+              gridSize={gridSize}
+              clipEdges={allClipEdges}
+              onTimeUpdate={(time) => {
+                dispatch(setPlayheadPosition(time))
+                onTimeUpdate(time)
+              }}
             />
           </div>
         </div>
       </div>
       
+      {/* Timeline Footer */}
       <div className="timeline-footer">
         <div className="timeline-actions">
-          <button 
+          <button
             className={`btn btn-primary ${!canExport ? 'disabled' : ''}`}
-            onClick={() => {
-              if (onExport) {
-                onExport()
-              } else {
-                console.error('onExport function not provided!')
-              }
-            }}
+            onClick={() => onExport?.()}
             disabled={!canExport}
-            style={{
-              opacity: canExport ? 1 : 0.5,
-              cursor: canExport ? 'pointer' : 'not-allowed'
-            }}
           >
             Export {canExport ? '✓' : '✗'}
           </button>
-          <button className="btn btn-secondary">Save Project</button>
+          <button
+            className="btn btn-secondary"
+            onClick={handleSplitAtPlayhead}
+            disabled={!selectedClipId}
+            title="Split clip at playhead (S)"
+          >
+            Split at Playhead
+          </button>
         </div>
       </div>
     </div>
@@ -226,3 +310,4 @@ function Timeline({ clips, currentTime, onTimeUpdate, onUpdateClip, onSelectClip
 }
 
 export default Timeline
+

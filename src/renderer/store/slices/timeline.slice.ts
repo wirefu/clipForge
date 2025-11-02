@@ -17,7 +17,7 @@ const initialState: TimelineState = {
   tracks: [
     {
       id: 'track-1',
-      name: 'Video Track 1',
+      name: 'Main Video',
       type: 'video',
       clips: [],
       volume: 1,
@@ -26,8 +26,8 @@ const initialState: TimelineState = {
     },
     {
       id: 'track-2',
-      name: 'Audio Track 1',
-      type: 'audio',
+      name: 'Overlay/PiP',
+      type: 'video',
       clips: [],
       volume: 1,
       muted: false,
@@ -36,8 +36,8 @@ const initialState: TimelineState = {
   ],
   clips: [],
   playheadPosition: 0,
-  zoomLevel: 1,
-  totalDuration: 0,
+  zoomLevel: 50, // pixels per second (default)
+  totalDuration: 60,
   isPlaying: false,
   selectedClipId: null,
   snapToGrid: true,
@@ -177,6 +177,57 @@ const timelineSlice = createSlice({
         }
       })
     },
+    splitClip: (state, action: PayloadAction<{ clipId: string; splitTime: number }>) => {
+      const { clipId, splitTime } = action.payload
+      const clipIndex = state.clips.findIndex(clip => clip.id === clipId)
+      
+      if (clipIndex === -1) return
+      
+      const originalClip = state.clips[clipIndex]
+      const clipStart = originalClip.start
+      const clipEnd = clipStart + originalClip.duration
+      
+      // Validate split time is within clip bounds
+      if (splitTime <= clipStart || splitTime >= clipEnd) return
+      
+      // Calculate split position relative to clip
+      const splitRelativeTime = splitTime - clipStart
+      
+      // Calculate trim points for both clips
+      const firstClipTrimEnd = Math.min(originalClip.trimEnd, originalClip.trimStart + splitRelativeTime)
+      const secondClipTrimStart = Math.max(originalClip.trimStart, originalClip.trimStart + splitRelativeTime)
+      
+      // Create first clip (before split)
+      const firstClip: TimelineClip = {
+        ...originalClip,
+        id: originalClip.id,
+        duration: splitRelativeTime,
+        trimEnd: firstClipTrimEnd
+      }
+      
+      // Create second clip (after split)
+      const secondClip: TimelineClip = {
+        ...originalClip,
+        id: `clip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        start: splitTime,
+        duration: originalClip.duration - splitRelativeTime,
+        trimStart: secondClipTrimStart - originalClip.trimStart,
+        trimEnd: originalClip.trimEnd
+      }
+      
+      // Replace original clip with first clip and add second clip
+      state.clips[clipIndex] = firstClip
+      state.clips.push(secondClip)
+      
+      // Update track clips
+      state.tracks.forEach(track => {
+        const trackClipIndex = track.clips.findIndex(clip => clip.id === clipId)
+        if (trackClipIndex !== -1) {
+          track.clips[trackClipIndex] = firstClip
+          track.clips.push(secondClip)
+        }
+      })
+    },
   },
 })
 
@@ -196,6 +247,7 @@ export const {
   setClipInPoint,
   setClipOutPoint,
   trimClip,
+  splitClip,
 } = timelineSlice.actions
 
 export default timelineSlice.reducer

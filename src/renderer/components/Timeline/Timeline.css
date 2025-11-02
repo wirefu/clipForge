@@ -4,6 +4,7 @@
   flex-direction: column;
   background-color: #2a2a2a;
   color: #ffffff;
+  overflow: hidden;
 }
 
 .timeline-header {
@@ -14,6 +15,7 @@
   padding: 0 20px;
   border-bottom: 1px solid #333;
   background-color: #333;
+  flex-shrink: 0;
 }
 
 .timeline-controls {
@@ -35,158 +37,99 @@
   justify-content: center;
   font-size: 16px;
   font-weight: bold;
+  transition: background-color 0.2s;
 }
 
 .timeline-btn:hover {
   background-color: #555;
 }
 
+.timeline-btn:active {
+  background-color: #666;
+}
+
+.zoom-btn {
+  font-size: 18px;
+}
+
 .zoom-level {
   color: #ccc;
   font-size: 12px;
-  margin-left: 10px;
+  margin: 0 5px;
+  min-width: 40px;
+  text-align: center;
+}
+
+.timeline-divider {
+  width: 1px;
+  height: 20px;
+  background-color: #666;
+  margin: 0 5px;
+}
+
+.snap-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ccc;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.snap-toggle input[type="checkbox"] {
+  cursor: pointer;
 }
 
 .timeline-info {
   color: #00d4ff;
   font-weight: 500;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
 }
 
 .timeline-content {
   flex: 1;
-  overflow: hidden;
-}
-
-.timeline-tracks {
-  height: 100%;
   display: flex;
   flex-direction: column;
-}
-
-.track-header {
-  height: 40px;
-  background-color: #333;
-  border-bottom: 1px solid #444;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.track-label {
-  color: #ccc;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.timeline-track {
-  flex: 1;
-  position: relative;
-  background-color: #1e1e1e;
-  cursor: crosshair;
   overflow: hidden;
+  position: relative;
 }
 
-.timeline-ruler {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
+.timeline-ruler-container {
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 40px;
   background-color: #252525;
   border-bottom: 1px solid #333;
 }
 
-.time-marker {
+.timeline-tracks-container {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.timeline-tracks-wrapper {
   position: absolute;
   top: 0;
-  height: 100%;
-}
-
-.marker-line {
-  width: 1px;
-  height: 20px;
-  background-color: #666;
-  margin-top: 5px;
-}
-
-.marker-label {
-  position: absolute;
-  top: 25px;
-  left: -20px;
-  color: #888;
-  font-size: 10px;
-  white-space: nowrap;
-}
-
-.timeline-clips {
-  position: absolute;
-  top: 30px;
   left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-.timeline-clip {
-  position: absolute;
-  top: 5px;
-  height: 30px;
-  background-color: #00d4ff;
-  border-radius: 4px;
-  cursor: move;
-  border: 2px solid transparent;
-  transition: border-color 0.2s ease;
-  z-index: 5;
-}
-
-.timeline-clip:hover {
-  border-color: #ffffff;
-}
-
-.clip-content {
-  padding: 8px 12px;
   height: 100%;
-  display: flex;
-  align-items: center;
-  color: #000;
-  font-weight: 500;
-  font-size: 12px;
+  pointer-events: none;
 }
 
-.clip-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.playhead {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background-color: #ff4444;
-  cursor: ew-resize;
-  z-index: 10;
-}
-
-.playhead::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: -4px;
-  width: 10px;
-  height: 10px;
-  background-color: #ff4444;
-  border-radius: 50%;
+.timeline-tracks-wrapper > * {
+  pointer-events: auto;
 }
 
 .timeline-footer {
-  height: 60px;
-  background-color: #333;
-  border-top: 1px solid #444;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   padding: 0 20px;
+  border-top: 1px solid #333;
+  background-color: #333;
+  flex-shrink: 0;
 }
 
 .timeline-actions {
@@ -197,11 +140,11 @@
 .btn {
   padding: 8px 16px;
   border: none;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .btn-primary {
@@ -209,37 +152,54 @@
   color: #000;
 }
 
-.btn-primary:hover {
-  background-color: #00b8e6;
+.btn-primary:hover:not(.disabled) {
+  background-color: #00ffff;
+}
+
+.btn-primary.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
-  background-color: #444;
-  color: #ffffff;
-  border: 1px solid #666;
-}
-
-.btn-secondary:hover {
   background-color: #555;
+  color: #fff;
 }
 
-/* Responsive design */
-@media (max-width: 768px) {
-  .timeline-header {
-    padding: 0 15px;
-  }
-  
-  .track-header {
-    padding: 0 15px;
-  }
-  
-  .timeline-footer {
-    padding: 0 15px;
-  }
-  
-  .timeline-btn {
-    width: 25px;
-    height: 25px;
-    font-size: 14px;
-  }
+.btn-secondary:hover:not(:disabled) {
+  background-color: #666;
 }
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Synchronize scroll between ruler and tracks */
+.timeline-ruler-container,
+.timeline-tracks-container {
+  scrollbar-width: thin;
+  scrollbar-color: #666 #333;
+}
+
+.timeline-ruler-container::-webkit-scrollbar,
+.timeline-tracks-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.timeline-ruler-container::-webkit-scrollbar-track,
+.timeline-tracks-container::-webkit-scrollbar-track {
+  background: #333;
+}
+
+.timeline-ruler-container::-webkit-scrollbar-thumb,
+.timeline-tracks-container::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 4px;
+}
+
+.timeline-ruler-container::-webkit-scrollbar-thumb:hover,
+.timeline-tracks-container::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+

@@ -1,0 +1,32 @@
+.time-ruler {
+  position: relative;
+  height: 40px;
+  background-color: #252525;
+  border-bottom: 1px solid #333;
+  overflow: hidden;
+}
+
+.time-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+}
+
+.marker-line {
+  width: 1px;
+  height: 20px;
+  background-color: #666;
+  margin-top: 5px;
+}
+
+.marker-label {
+  position: absolute;
+  top: 25px;
+  left: -15px;
+  color: #888;
+  font-size: 11px;
+  white-space: nowrap;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+}
+
