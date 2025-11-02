@@ -573,8 +573,9 @@ export const useRecording = () => {
           const arrayBuffer = await blob.arrayBuffer()
 
           // Generate file path with timestamp
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-          const filename = `${settings.filename || 'webcam-recording'}-${timestamp}.webm`
+          // Note: settings.filename already includes timestamp from RecordingModal
+          // Just append .webm extension (will be converted to .mp4)
+          const filename = `${settings.filename || `webcam-recording-${new Date().toISOString().replace(/[:.]/g, '-')}`}.webm`
           const filePath = `${settings.outputPath}/${filename}`
 
           console.log('💾 Saving recording file:', {

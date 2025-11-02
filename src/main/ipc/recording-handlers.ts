@@ -172,7 +172,7 @@ export function registerRecordingHandlers() {
   })
 
   // Select recording output file
-  ipcMain.handle(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_FILE, async (event, { defaultFilename }: { defaultFilename: string }) => {
+  ipcMain.handle(IPC_CHANNELS.RECORDING.SELECT_OUTPUT_FILE, async (_event, { defaultFilename }: { defaultFilename: string }) => {
     try {
       const result = await dialog.showSaveDialog({
         title: 'Save Recording As',
@@ -229,7 +229,7 @@ export function registerRecordingHandlers() {
       const fs = require('fs')
       const stats = fs.statSync(filePath)
       
-      console.log('✅ [Main Process] File saved successfully:', {
+      console.log('✅ [Main Process] WebM file saved successfully:', {
         filePath,
         size: stats.size,
         sizeKB: (stats.size / 1024).toFixed(2) + ' KB',
@@ -238,10 +238,162 @@ export function registerRecordingHandlers() {
         modified: stats.mtime
       })
       
-      console.log('📍 Full file path:', filePath)
-      console.log('📂 File should be at:', filePath)
+      // Convert WebM to MP4 using FFmpeg
+      const mp4FilePath = filePath.replace(/\.webm$/i, '.mp4')
+      console.log('🔄 [Main Process] Starting WebM to MP4 conversion:', {
+        input: filePath,
+        output: mp4FilePath,
+        inputSize: stats.size
+      })
       
-      return { success: true, outputPath: filePath }
+      try {
+        const { spawn } = require('child_process')
+        const fs = require('fs').promises
+        
+        await new Promise<void>((resolve, reject) => {
+          const ffmpeg = spawn('ffmpeg', [
+            '-i', filePath,           // Input file
+            '-c:v', 'libx264',         // Video codec: H.264
+            '-preset', 'medium',       // Encoding speed
+            '-crf', '23',              // Quality (lower = better, 18-28 typical)
+            '-c:a', 'aac',             // Audio codec: AAC
+            '-b:a', '128k',            // Audio bitrate
+            '-movflags', '+faststart', // Fast start for web playback
+            '-y',                      // Overwrite output file if exists
+            mp4FilePath                // Output file
+          ])
+          
+          // Handle stream errors (EPIPE)
+          ffmpeg.stdout?.on('error', (error: any) => {
+            if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+              console.error('FFmpeg stdout error:', error)
+            }
+          })
+          
+          ffmpeg.stderr?.on('error', (error: any) => {
+            if (error.code !== 'EPIPE' && error.code !== 'ENOTSOCK' && !error.message?.includes('EPIPE')) {
+              console.error('FFmpeg stderr error:', error)
+            }
+          })
+          
+          let stderrOutput = ''
+          
+          ffmpeg.stderr?.on('data', (data: Buffer) => {
+            stderrOutput += data.toString()
+          })
+          
+          ffmpeg.on('close', async (code: number) => {
+            if (code === 0) {
+              // Verify MP4 file was created - wait a bit for filesystem to sync
+              await new Promise(resolve => setTimeout(resolve, 100))
+              
+              try {
+                const mp4Stats = await fs.stat(mp4FilePath)
+                
+                if (mp4Stats.size === 0) {
+                  reject(new Error('MP4 file created but is empty (0 bytes)'))
+                  return
+                }
+                
+                console.log('✅ [Main Process] MP4 conversion successful:', {
+                  mp4Path: mp4FilePath,
+                  mp4Size: mp4Stats.size,
+                  mp4SizeKB: (mp4Stats.size / 1024).toFixed(2) + ' KB',
+                  mp4SizeMB: (mp4Stats.size / (1024 * 1024)).toFixed(2) + ' MB',
+                  created: mp4Stats.birthtime
+                })
+                
+                // Verify file is actually readable
+                try {
+                  const fsSync = require('fs')
+                  const testRead = fsSync.readFileSync(mp4FilePath, { encoding: null, flag: 'r' })
+                  if (testRead.length !== mp4Stats.size) {
+                    console.warn('⚠️ [Main Process] File size mismatch when reading')
+                  }
+                  console.log('✅ [Main Process] MP4 file is readable and valid')
+                } catch (readError) {
+                  console.error('❌ [Main Process] Cannot read MP4 file:', readError)
+                  reject(new Error(`MP4 file exists but cannot be read: ${readError instanceof Error ? readError.message : 'Unknown error'}`))
+                  return
+                }
+                
+                // Optionally delete the WebM file to save space
+                try {
+                  await fs.unlink(filePath)
+                  console.log('🗑️ [Main Process] Original WebM file deleted')
+                } catch (deleteError) {
+                  console.warn('⚠️ [Main Process] Could not delete WebM file:', deleteError)
+                  // Don't fail if deletion fails
+                }
+                
+                resolve()
+              } catch (statError) {
+                console.error('❌ [Main Process] MP4 file not found after conversion:', statError)
+                console.error('   Expected path:', mp4FilePath)
+                reject(new Error(`MP4 conversion completed but file not found: ${statError instanceof Error ? statError.message : 'Unknown error'}`))
+              }
+            } else {
+              const errorSnippet = stderrOutput.length > 500 
+                ? stderrOutput.substring(stderrOutput.length - 500)
+                : stderrOutput
+              
+              console.error('❌ [Main Process] FFmpeg conversion failed:', {
+                code,
+                stderr: errorSnippet
+              })
+              reject(new Error(`FFmpeg conversion failed with exit code ${code}`))
+            }
+          })
+          
+          ffmpeg.on('error', (error: Error) => {
+            console.error('❌ [Main Process] FFmpeg process error:', error)
+            reject(error)
+          })
+        })
+        
+        // Verify MP4 file exists and has content
+        const fsSync = require('fs')
+        const finalStats = fsSync.statSync(mp4FilePath)
+        
+        if (finalStats.size === 0) {
+          throw new Error('MP4 file created but has 0 bytes')
+        }
+        
+        console.log('📍 [Main Process] Final MP4 file verified:', {
+          path: mp4FilePath,
+          size: finalStats.size,
+          sizeKB: (finalStats.size / 1024).toFixed(2) + ' KB',
+          sizeMB: (finalStats.size / (1024 * 1024)).toFixed(2) + ' MB',
+          exists: fsSync.existsSync(mp4FilePath)
+        })
+        
+        return { success: true, outputPath: mp4FilePath }
+      } catch (convertError) {
+        console.error('❌ [Main Process] Conversion error:', convertError)
+        
+        // Check if WebM file still exists
+        const fsSync = require('fs')
+        if (fsSync.existsSync(filePath)) {
+          const webmStats = fsSync.statSync(filePath)
+          console.warn('⚠️ [Main Process] Conversion failed, WebM file still exists:', {
+            path: filePath,
+            size: webmStats.size
+          })
+          // Return original WebM file if conversion fails
+          return { 
+            success: true, 
+            outputPath: filePath,
+            warning: `Conversion failed: ${convertError instanceof Error ? convertError.message : 'Unknown error'}. WebM file saved instead.`
+          }
+        } else {
+          // Neither file exists - this is a problem
+          console.error('❌ [Main Process] CRITICAL: Neither WebM nor MP4 file exists!')
+          return {
+            success: false,
+            error: `Conversion failed and original WebM file not found: ${convertError instanceof Error ? convertError.message : 'Unknown error'}`
+          }
+        }
+      }
     } catch (error) {
       console.error('❌ [Main Process] Error saving webcam recording:', error)
       return { 
